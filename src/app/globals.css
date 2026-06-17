@@ -127,7 +127,13 @@
   }
   html {
     @apply font-sans;
-    font-size: calc(100% * var(--ui-scale));
+    zoom: var(--ui-scale);
+  }
+
+  @supports not (zoom: 1) {
+    html {
+      font-size: calc(100% * var(--ui-scale));
+    }
   }
   h1,
   h2,
