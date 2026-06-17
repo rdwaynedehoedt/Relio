@@ -9,14 +9,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { getCompanies, getContacts } from "@/lib/firestore";
 import type { Contact } from "@/lib/types";
+import { getTimeGreeting, getUserFirstName } from "@/lib/user-utils";
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
-}
-
-function getFirstName(displayName?: string | null) {
-  if (!displayName) return "there";
-  return displayName.split(" ")[0];
 }
 
 export default function DashboardPage() {
@@ -66,7 +62,7 @@ export default function DashboardPage() {
                 Dashboard
               </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground">
-                Good morning, {getFirstName(user?.displayName)}
+                {getTimeGreeting()}, {getUserFirstName(user?.displayName, user?.email)}
               </h1>
               <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
                 Here&apos;s what&apos;s happening across your workspace today.
