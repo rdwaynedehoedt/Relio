@@ -1,0 +1,19 @@
+export const RELIO_LOGO_PATH =
+  "M10.5 8.5h6.4c3.4 0 5.8 1.9 5.8 5.1 0 2.2-1.2 3.8-3.1 4.6l3.6 7.3h-3.8l-3.2-6.5h-2.7v6.5h-3V8.5zm3 3.2v4.3h2.9c1.7 0 2.7-.9 2.7-2.2 0-1.4-1-2.1-2.7-2.1h-2.9z";
+
+const LOGO_COLORS = {
+  light: { tile: "#171717", mark: "#FAFAFA" },
+  dark: { tile: "#FAFAFA", mark: "#171717" },
+} as const;
+
+export function buildRelioLogoSvg(mode: "light" | "dark") {
+  const { tile, mark } = LOGO_COLORS[mode];
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Relio"><rect width="32" height="32" rx="9" fill="${tile}"/><path fill="${mark}" d="${RELIO_LOGO_PATH}"/></svg>`;
+}
+
+export function buildRelioLogoSvgAdaptive() {
+  const { light, dark } = LOGO_COLORS;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Relio"><style>@media (prefers-color-scheme: dark){.tile{fill:${dark.tile}}.mark{fill:${dark.mark}}}@media (prefers-color-scheme: light){.tile{fill:${light.tile}}.mark{fill:${light.mark}}}</style><rect class="tile" width="32" height="32" rx="9" fill="${light.tile}"/><path class="mark" fill="${light.mark}" d="${RELIO_LOGO_PATH}"/></svg>`;
+}

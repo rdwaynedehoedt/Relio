@@ -1,0 +1,135 @@
+export interface Contact {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  mobilePhone?: string;
+  role?: string;
+  companyId?: string;
+  companyName?: string;
+  industry?: string;
+  domain?: string;
+  country?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  address?: string;
+  tags?: string[];
+  notes?: string;
+  linkedInUrl?: string;
+  twitterHandle?: string;
+  twitterUrl?: string;
+  lifecycleStage?: string;
+  leadStatus?: string;
+  annualRevenue?: string;
+  numberOfEmployees?: string;
+  lastInteractionDate?: string;
+  source?: "manual" | "hubspot";
+  hubspotId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  userId: string;
+}
+
+export interface Company {
+  id?: string;
+  name: string;
+  logoUrl?: string;
+  domain?: string;
+  industry?: string;
+  website?: string;
+  description?: string;
+  aboutUs?: string;
+  country?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  address?: string;
+  phone?: string;
+  numberOfEmployees?: string;
+  annualRevenue?: string;
+  foundedYear?: string;
+  linkedinUrl?: string;
+  twitterHandle?: string;
+  facebookUrl?: string;
+  timezone?: string;
+  type?: string;
+  tags?: string[];
+  notes?: string;
+  hubspotId?: string;
+  userId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type ThemeMode = "system" | "light" | "dark";
+
+export interface UserPreferences {
+  theme: ThemeMode;
+  defaultCountry?: string;
+  defaultCountryCode?: string;
+}
+
+export interface HubSpotIntegration {
+  token: string;
+  connectedAt: string;
+  lastSyncedAt?: string;
+}
+
+export interface HubSpotImportContact {
+  hubspotId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  mobilePhone: string;
+  role: string;
+  companyName: string;
+  industry: string;
+  domain: string;
+  website: string;
+  country: string;
+  city: string;
+  state: string;
+  zip: string;
+  address: string;
+  linkedInUrl: string;
+  twitterHandle: string;
+  lifecycleStage: string;
+  leadStatus: string;
+  annualRevenue: string;
+  numberOfEmployees: string;
+  lastInteractionDate: string;
+  associatedCompanyId: string;
+  hubspotOwnerEmail: string;
+  analyticsSource: string;
+  source: "hubspot";
+}
+
+export interface HubSpotImportCompany {
+  hubspotId: string;
+  name: string;
+  domain: string;
+  website: string;
+  industry: string;
+  description: string;
+  aboutUs: string;
+  country: string;
+  city: string;
+  state: string;
+  zip: string;
+  address: string;
+  phone: string;
+  numberOfEmployees: string;
+  annualRevenue: string;
+  foundedYear: string;
+  linkedinUrl: string;
+  twitterHandle: string;
+  facebookUrl: string;
+  leadStatus: string;
+  lifecycleStage: string;
+  timezone: string;
+  type: string;
+  logoUrl: string;
+}
