@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import RelioLogo from "@/components/RelioLogo";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 
 function GoogleIcon() {
@@ -32,14 +31,9 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { user, loading, signIn, sendMagicLink } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const router = useRouter();
-  const emailRef = useRef<HTMLInputElement>(null);
-
-  const [email, setEmail] = useState("");
-  const [sendingLink, setSendingLink] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [linkSent, setLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,12 +41,6 @@ export default function LoginPage() {
       router.replace("/dashboard");
     }
   }, [user, loading, router]);
-
-  useEffect(() => {
-    if (!linkSent) {
-      emailRef.current?.focus();
-    }
-  }, [linkSent]);
 
   async function handleGoogleSignIn() {
     setError(null);
@@ -68,27 +56,6 @@ export default function LoginPage() {
       );
     } finally {
       setGoogleLoading(false);
-    }
-  }
-
-  async function handleMagicLinkSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!email.trim()) return;
-
-    setError(null);
-    setSendingLink(true);
-
-    try {
-      await sendMagicLink(email.trim());
-      setLinkSent(true);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not send magic link. Please try again.",
-      );
-    } finally {
-      setSendingLink(false);
     }
   }
 
@@ -114,78 +81,21 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-8">
-          {linkSent ? (
-            <div className="space-y-3 text-center">
-              <p className="text-base font-bold text-foreground">Check your inbox</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                We sent a sign-in link to{" "}
-                <span className="font-semibold text-foreground">{email}</span>
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setLinkSent(false);
-                  setError(null);
-                }}
-                className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
-              >
-                Use a different email
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="h-11 w-full font-semibold"
-                disabled={googleLoading || sendingLink}
-                onClick={() => void handleGoogleSignIn()}
-              >
-                {googleLoading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <GoogleIcon />
-                )}
-                Continue with Google
-              </Button>
-
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs font-medium text-muted-foreground">or</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-
-              <form
-                className="space-y-3"
-                onSubmit={(event) => void handleMagicLinkSubmit(event)}
-              >
-                <Input
-                  ref={emailRef}
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@company.com"
-                  required
-                  autoComplete="email"
-                  disabled={sendingLink || googleLoading}
-                  className="h-11"
-                />
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="h-11 w-full font-semibold"
-                  disabled={sendingLink || googleLoading || !email.trim()}
-                >
-                  {sendingLink ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    "Send magic link"
-                  )}
-                </Button>
-              </form>
-            </div>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="h-11 w-full font-semibold"
+            disabled={googleLoading}
+            onClick={() => void handleGoogleSignIn()}
+          >
+            {googleLoading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <GoogleIcon />
+            )}
+            Continue with Google
+          </Button>
 
           {error ? (
             <p className="mt-4 text-center text-sm font-medium text-destructive">

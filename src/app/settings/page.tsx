@@ -15,6 +15,7 @@ import {
   User,
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
 import IntegrationsPanel from "@/components/IntegrationsPanel";
 import Sidebar from "@/components/Sidebar";
 import SidebarInset from "@/components/SidebarInset";
@@ -269,93 +270,97 @@ function ProfileSection() {
     .toUpperCase();
 
   return (
-    <SettingsCard
-      title="Profile"
-      description="Update how you appear across Relio."
-    >
-      <div className="flex items-start gap-5">
-        <Avatar className="size-16 ring-2 ring-border">
-          <AvatarImage src={user?.photoURL ?? undefined} alt={displayName} />
-          <AvatarFallback className="bg-muted text-base font-semibold text-muted-foreground">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+    <div className="space-y-6">
+      <SettingsCard
+        title="Profile"
+        description="Update how you appear across Relio."
+      >
+        <div className="flex items-start gap-5">
+          <Avatar className="size-16 ring-2 ring-border">
+            <AvatarImage src={user?.photoURL ?? undefined} alt={displayName} />
+            <AvatarFallback className="bg-muted text-base font-semibold text-muted-foreground">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
 
-        <div className="flex-1 space-y-5">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-foreground">
-              Display name
-            </span>
-            <Input
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              className="h-11"
-              placeholder="Your name"
-            />
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-foreground">Email</span>
-            <Input
-              value={user?.email ?? ""}
-              readOnly
-              className="h-11 bg-muted/50 text-muted-foreground"
-            />
-            <p className="text-xs text-muted-foreground">
-              Email is managed by your sign-in provider and cannot be changed
-              here.
-            </p>
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-foreground">
-              Birth year
-            </span>
-            <Input
-              type="number"
-              min={1900}
-              max={new Date().getFullYear()}
-              value={birthYear}
-              onChange={(event) => setBirthYear(event.target.value)}
-              className="h-11"
-              placeholder="e.g. 1990"
-            />
-            <p className="text-xs text-muted-foreground">
-              Used to anchor your Life Map timeline.
-            </p>
-          </label>
-
-          {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
-
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => void handleSave()}
-              disabled={saving}
-              className="h-10"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save profile"
-              )}
-            </Button>
-            {saved ? (
-              <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
-                <Check className="size-4" />
-                Saved
+          <div className="flex-1 space-y-5">
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-foreground">
+                Display name
               </span>
+              <Input
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                className="h-11"
+                placeholder="Your name"
+              />
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-foreground">Email</span>
+              <Input
+                value={user?.email ?? ""}
+                readOnly
+                className="h-11 bg-muted/50 text-muted-foreground"
+              />
+              <p className="text-xs text-muted-foreground">
+                Email is managed by your sign-in provider and cannot be changed
+                here.
+              </p>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-foreground">
+                Birth year
+              </span>
+              <Input
+                type="number"
+                min={1900}
+                max={new Date().getFullYear()}
+                value={birthYear}
+                onChange={(event) => setBirthYear(event.target.value)}
+                className="h-11"
+                placeholder="e.g. 1990"
+              />
+              <p className="text-xs text-muted-foreground">
+                Used to anchor your Life Map timeline.
+              </p>
+            </label>
+
+            {error ? (
+              <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {error}
+              </p>
             ) : null}
+
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => void handleSave()}
+                disabled={saving}
+                className="h-10"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save profile"
+                )}
+              </Button>
+              {saved ? (
+                <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+                  <Check className="size-4" />
+                  Saved
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
-    </SettingsCard>
+      </SettingsCard>
+
+      <DeleteAccountSection />
+    </div>
   );
 }
 

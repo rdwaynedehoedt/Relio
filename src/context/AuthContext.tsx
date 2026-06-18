@@ -8,9 +8,11 @@ import {
   type ReactNode,
 } from "react";
 import {
-  isSignInWithEmailLink,
   GoogleAuthProvider,
+  deleteUser,
+  isSignInWithEmailLink,
   onAuthStateChanged,
+  reauthenticateWithPopup,
   sendSignInLinkToEmail,
   signInWithEmailLink,
   signInWithPopup,
@@ -23,7 +25,7 @@ import {
   getMagicLinkCallbackUrl,
   storeEmailForSignIn,
 } from "@/lib/auth-utils";
-import { saveGoogleIntegration } from "@/lib/firestore";
+import { deleteAllUserData, saveGoogleIntegration } from "@/lib/firestore";
 
 export const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
 
@@ -35,6 +37,7 @@ interface AuthContextValue {
   sendMagicLink: (email: string) => Promise<void>;
   completeMagicLinkSignIn: (email: string, url: string) => Promise<void>;
   connectGoogleContacts: () => Promise<string | null>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -99,6 +102,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await firebaseSignOut(auth);
   };
 
+  const deleteAccount = async () => {
+    if (!auth?.currentUser) {
+      throw new Error("You must be signed in to delete your account.");
+    }
+
+    const firebaseUser = auth.currentUser;
+
+    await reauthenticateWithPopup(firebaseUser, googleProvider);
+    await deleteAllUserData(firebaseUser.uid);
+    await deleteUser(firebaseUser);
+  };
+
   const sendMagicLink = async (email: string) => {
     if (!auth) {
       throw new Error("Firebase is not configured. Add credentials to .env.local.");
@@ -134,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sendMagicLink,
         completeMagicLinkSignIn,
         connectGoogleContacts,
+        deleteAccount,
       }}
     >
       {children}

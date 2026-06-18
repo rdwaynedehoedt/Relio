@@ -969,3 +969,76 @@ export async function deleteLifeEvent(id: string): Promise<void> {
 
   await deleteDoc(doc(db, "lifeEvents", id));
 }
+
+const USER_DATA_COLLECTIONS = [
+  "contacts",
+  "companies",
+  "wallets",
+  "transactions",
+  "fixedDeposits",
+  "activities",
+  "notes",
+  "goals",
+  "lifeEvents",
+] as const;
+
+async function deleteQueryBatch(
+  docRefs: { ref: ReturnType<typeof doc> }[],
+): Promise<void> {
+  if (!db || docRefs.length === 0) return;
+
+  const firestore = db;
+  const chunkSize = 500;
+
+  for (let index = 0; index < docRefs.length; index += chunkSize) {
+    const batch = writeBatch(firestore);
+    const chunk = docRefs.slice(index, index + chunkSize);
+    chunk.forEach((docSnap) => batch.delete(docSnap.ref));
+    await batch.commit();
+  }
+}
+
+async function deleteCollectionByUserId(
+  collectionName: string,
+  userId: string,
+): Promise<void> {
+  if (!db) return;
+
+  const snapshot = await getDocs(
+    query(collection(db, collectionName), where("userId", "==", userId)),
+  );
+
+  await deleteQueryBatch(snapshot.docs);
+}
+
+async function deleteUserSubcollection(
+  userId: string,
+  subcollection: string,
+): Promise<void> {
+  if (!db) return;
+
+  const snapshot = await getDocs(
+    collection(db, "users", userId, subcollection),
+  );
+
+  await deleteQueryBatch(snapshot.docs);
+}
+
+/** Permanently removes all workspace data for a user (PDPA erasure request). */
+export async function deleteAllUserData(userId: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await Promise.all(
+    USER_DATA_COLLECTIONS.map((name) => deleteCollectionByUserId(name, userId)),
+  );
+
+  await Promise.all([
+    deleteUserSubcollection(userId, "integrations"),
+    deleteDoc(doc(db, "users", userId, "preferences", "settings")).catch(
+      () => undefined,
+    ),
+    deleteDoc(doc(db, "users", userId, "onboarding", "state")).catch(
+      () => undefined,
+    ),
+  ]);
+}
