@@ -1,7 +1,10 @@
+import type { OnboardingPage } from "@/lib/types";
+
 export const SPOTLIGHT_PADDING = 8;
 export const POPOVER_WIDTH = 300;
 export const POPOVER_GAP = 14;
 export const VIEWPORT_PADDING = 16;
+export const OVERLAY_COLOR = "rgba(0, 0, 0, 0.65)";
 
 export interface SpotlightRect {
   x: number;
@@ -21,9 +24,47 @@ export interface PopoverPosition {
   arrowOffset: number;
 }
 
+export interface OverlayPanel {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+function tourStepKey(page: OnboardingPage) {
+  return `relio-tour-step-${page}`;
+}
+
+export function getSavedTourStep(page: OnboardingPage): number {
+  if (typeof window === "undefined") return 0;
+  const saved = sessionStorage.getItem(tourStepKey(page));
+  if (!saved) return 0;
+  const parsed = Number.parseInt(saved, 10);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+export function saveTourStep(page: OnboardingPage, step: number) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(tourStepKey(page), String(step));
+}
+
+export function clearTourStep(page: OnboardingPage) {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(tourStepKey(page));
+}
+
 export function getTourTarget(target?: string): HTMLElement | null {
   if (!target) return null;
   return document.querySelector(`[data-tour="${target}"]`);
+}
+
+export function scrollTourTargetIntoView(target: HTMLElement | null) {
+  if (!target) return;
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+    inline: "nearest",
+  });
 }
 
 export function getSpotlightRect(element: HTMLElement | null): SpotlightRect | null {
@@ -39,6 +80,31 @@ export function getSpotlightRect(element: HTMLElement | null): SpotlightRect | n
     centerX: rect.left + rect.width / 2,
     centerY: rect.top + rect.height / 2,
   };
+}
+
+export function getOverlayPanels(spotlight: SpotlightRect | null): OverlayPanel[] {
+  if (!spotlight) return [];
+
+  const viewportW = window.innerWidth;
+  const viewportH = window.innerHeight;
+  const { x, y, width, height } = spotlight;
+
+  return [
+    { top: 0, left: 0, width: viewportW, height: Math.max(0, y) },
+    { top: y, left: 0, width: Math.max(0, x), height },
+    {
+      top: y,
+      left: x + width,
+      width: Math.max(0, viewportW - x - width),
+      height,
+    },
+    {
+      top: y + height,
+      left: 0,
+      width: viewportW,
+      height: Math.max(0, viewportH - y - height),
+    },
+  ];
 }
 
 export function getPopoverPosition(
@@ -62,27 +128,25 @@ export function getPopoverPosition(
 
   const viewportW = window.innerWidth;
   const viewportH = window.innerHeight;
-  const nearBottom =
-    spotlight.y + spotlight.height + popoverHeight + POPOVER_GAP >
-    viewportH - VIEWPORT_PADDING;
-  const nearTop =
-    spotlight.y - popoverHeight - POPOVER_GAP < VIEWPORT_PADDING;
   const preferLeft = spotlight.centerX > viewportW / 2;
+
+  const spaceBelow =
+    viewportH - VIEWPORT_PADDING - (spotlight.y + spotlight.height + POPOVER_GAP);
+  const spaceAbove = spotlight.y - POPOVER_GAP - VIEWPORT_PADDING;
+  const spaceRight =
+    viewportW - VIEWPORT_PADDING - (spotlight.x + spotlight.width + POPOVER_GAP);
+  const spaceLeft = spotlight.x - POPOVER_GAP - VIEWPORT_PADDING;
 
   let placement: PopoverPlacement = preferLeft ? "left" : "right";
 
-  if (nearBottom && !nearTop) {
+  if (spaceBelow < popoverHeight && spaceAbove > spaceBelow) {
     placement = "above";
-  } else if (placement === "left") {
-    const leftPos = spotlight.x - POPOVER_GAP - POPOVER_WIDTH;
-    if (leftPos < VIEWPORT_PADDING) {
-      placement = "right";
-    }
-  } else if (placement === "right") {
-    const rightPos = spotlight.x + spotlight.width + POPOVER_GAP + POPOVER_WIDTH;
-    if (rightPos > viewportW - VIEWPORT_PADDING) {
-      placement = "left";
-    }
+  } else if (spaceAbove < popoverHeight && spaceBelow > spaceAbove) {
+    placement = "below";
+  } else if (placement === "left" && spaceLeft < POPOVER_WIDTH) {
+    placement = spaceRight >= POPOVER_WIDTH ? "right" : "below";
+  } else if (placement === "right" && spaceRight < POPOVER_WIDTH) {
+    placement = spaceLeft >= POPOVER_WIDTH ? "left" : "below";
   }
 
   let top = 0;
@@ -92,11 +156,11 @@ export function getPopoverPosition(
   if (placement === "left") {
     left = spotlight.x - POPOVER_GAP - POPOVER_WIDTH;
     top = spotlight.centerY - popoverHeight / 2;
-    arrowOffset = popoverHeight / 2;
+    arrowOffset = spotlight.centerY - top;
   } else if (placement === "right") {
     left = spotlight.x + spotlight.width + POPOVER_GAP;
     top = spotlight.centerY - popoverHeight / 2;
-    arrowOffset = popoverHeight / 2;
+    arrowOffset = spotlight.centerY - top;
   } else if (placement === "above") {
     top = spotlight.y - POPOVER_GAP - popoverHeight;
     left = spotlight.centerX - POPOVER_WIDTH / 2;

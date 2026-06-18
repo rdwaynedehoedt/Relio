@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -12,10 +11,17 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { PAGE_ONBOARDING_STEPS, type OnboardingStep } from "@/lib/onboarding-utils";
 import {
+  clearTourStep,
+  getOverlayPanels,
   getPopoverPosition,
+  getSavedTourStep,
   getSpotlightRect,
   getTourTarget,
+  OVERLAY_COLOR,
   POPOVER_WIDTH,
+  saveTourStep,
+  scrollTourTargetIntoView,
+  type OverlayPanel,
   type PopoverPlacement,
   type SpotlightRect,
 } from "@/lib/onboarding-tour";
@@ -28,66 +34,39 @@ interface OnboardingBannerProps {
   onSkip: () => void;
 }
 
-function SpotlightOverlay({
-  maskId,
-  spotlight,
+function OverlayPanels({
+  panels,
+  fullScreen,
 }: {
-  maskId: string;
-  spotlight: SpotlightRect | null;
+  panels: OverlayPanel[];
+  fullScreen: boolean;
 }) {
-  if (!spotlight) {
+  if (fullScreen) {
     return (
-      <div className="pointer-events-auto absolute inset-0 bg-black/60 backdrop-blur-[2px] tour-fade-in" />
+      <div
+        className="pointer-events-auto fixed inset-0 backdrop-blur-[2px] tour-fade-in"
+        style={{ backgroundColor: OVERLAY_COLOR }}
+        aria-hidden
+      />
     );
   }
 
   return (
     <>
-      <svg
-        className="pointer-events-none absolute inset-0 h-[100vh] w-[100vw] tour-fade-in"
-        aria-hidden
-      >
-        <defs>
-          <mask id={maskId}>
-            <rect width="100%" height="100%" fill="white" />
-            <rect
-              x={spotlight.x}
-              y={spotlight.y}
-              width={spotlight.width}
-              height={spotlight.height}
-              rx="8"
-              fill="black"
-              className="tour-spotlight-cutout"
-            />
-          </mask>
-        </defs>
-        <rect
-          width="100%"
-          height="100%"
-          fill="rgba(0,0,0,0.6)"
-          mask={`url(#${maskId})`}
+      {panels.map((panel, index) => (
+        <div
+          key={index}
+          className="pointer-events-auto fixed backdrop-blur-[2px] tour-fade-in"
+          style={{
+            top: panel.top,
+            left: panel.left,
+            width: panel.width,
+            height: panel.height,
+            backgroundColor: OVERLAY_COLOR,
+          }}
+          aria-hidden
         />
-      </svg>
-
-      <div
-        className="pointer-events-none absolute inset-0 backdrop-blur-[2px] tour-fade-in"
-        style={{
-          mask: `url(#${maskId})`,
-          WebkitMask: `url(#${maskId})`,
-        }}
-        aria-hidden
-      />
-
-      <div
-        className="pointer-events-none absolute rounded-lg border-2 border-white/90 tour-spotlight-ring"
-        style={{
-          left: spotlight.x,
-          top: spotlight.y,
-          width: spotlight.width,
-          height: spotlight.height,
-        }}
-        aria-hidden
-      />
+      ))}
     </>
   );
 }
@@ -105,7 +84,7 @@ function PopoverArrow({
   if (placement === "left") {
     return (
       <span
-        className={cn(base, "-right-3.5 border-l-[var(--card)]")}
+        className={cn(base, "-right-3.5 border-l-card")}
         style={{ top: offset - 7 }}
         aria-hidden
       />
@@ -115,7 +94,7 @@ function PopoverArrow({
   if (placement === "right") {
     return (
       <span
-        className={cn(base, "-left-3.5 border-r-[var(--card)]")}
+        className={cn(base, "-left-3.5 border-r-card")}
         style={{ top: offset - 7 }}
         aria-hidden
       />
@@ -125,7 +104,7 @@ function PopoverArrow({
   if (placement === "above") {
     return (
       <span
-        className={cn(base, "-bottom-3.5 border-t-[var(--card)]")}
+        className={cn(base, "-bottom-3.5 border-t-card")}
         style={{ left: offset - 7 }}
         aria-hidden
       />
@@ -135,7 +114,7 @@ function PopoverArrow({
   if (placement === "below") {
     return (
       <span
-        className={cn(base, "-top-3.5 border-b-[var(--card)]")}
+        className={cn(base, "-top-3.5 border-b-card")}
         style={{ left: offset - 7 }}
         aria-hidden
       />
@@ -151,12 +130,13 @@ export default function OnboardingBanner({
   onSkip,
 }: OnboardingBannerProps) {
   const steps = PAGE_ONBOARDING_STEPS[page];
-  const maskId = useId().replace(/:/g, "");
   const popoverRef = useRef<HTMLDivElement>(null);
+  const scrollTimerRef = useRef<number | null>(null);
 
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(() => getSavedTourStep(page));
   const [mounted, setMounted] = useState(false);
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
+  const [overlayPanels, setOverlayPanels] = useState<OverlayPanel[]>([]);
   const [popoverPos, setPopoverPos] = useState({
     top: 0,
     left: 0,
@@ -170,12 +150,18 @@ export default function OnboardingBanner({
   const hasTarget = Boolean(step?.target);
   const showNext = !hasTarget || (!step?.isAction && !isLastStep);
 
+  const handleSkip = useCallback(() => {
+    clearTourStep(page);
+    onSkip();
+  }, [onSkip, page]);
+
   const updateLayout = useCallback(() => {
     if (!step) return;
 
     const target = getTourTarget(step.target);
     const nextSpotlight = getSpotlightRect(target);
     setSpotlight(nextSpotlight);
+    setOverlayPanels(getOverlayPanels(nextSpotlight));
 
     const measuredHeight = popoverRef.current?.offsetHeight ?? popoverHeight;
     setPopoverPos(getPopoverPosition(nextSpotlight, measuredHeight));
@@ -186,32 +172,58 @@ export default function OnboardingBanner({
   }, []);
 
   useEffect(() => {
-    if (visible) {
-      setStepIndex(0);
-    }
-  }, [visible, page]);
+    const saved = getSavedTourStep(page);
+    setStepIndex(Math.min(saved, Math.max(steps.length - 1, 0)));
+  }, [page, steps.length]);
 
   useLayoutEffect(() => {
     if (!visible || !step) return;
 
     const target = getTourTarget(step.target);
+    let resizeObserver: ResizeObserver | null = null;
+    let activeTarget: HTMLElement | null = null;
+
+    const measure = () => {
+      const currentTarget = getTourTarget(step.target);
+      const nextSpotlight = getSpotlightRect(currentTarget);
+      setSpotlight(nextSpotlight);
+      setOverlayPanels(getOverlayPanels(nextSpotlight));
+
+      const measuredHeight = popoverRef.current?.offsetHeight ?? popoverHeight;
+      setPopoverPos(getPopoverPosition(nextSpotlight, measuredHeight));
+    };
+
     if (target) {
+      activeTarget = target;
       target.classList.add("tour-target-active");
+      scrollTourTargetIntoView(target);
+
+      resizeObserver = new ResizeObserver(measure);
+      resizeObserver.observe(target);
+
+      if (scrollTimerRef.current) {
+        window.clearTimeout(scrollTimerRef.current);
+      }
+      scrollTimerRef.current = window.setTimeout(measure, 320);
+    } else {
+      measure();
     }
 
-    updateLayout();
-
-    window.addEventListener("resize", updateLayout);
-    window.addEventListener("scroll", updateLayout, true);
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
 
     return () => {
-      if (target) {
-        target.classList.remove("tour-target-active");
+      if (activeTarget) {
+        activeTarget.classList.remove("tour-target-active");
       }
-      window.removeEventListener("resize", updateLayout);
-      window.removeEventListener("scroll", updateLayout, true);
+      resizeObserver?.disconnect();
+      if (scrollTimerRef.current) {
+        window.clearTimeout(scrollTimerRef.current);
+      }
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
     };
-  }, [visible, step, stepIndex, updateLayout]);
+  }, [visible, step, stepIndex, popoverHeight]);
 
   useLayoutEffect(() => {
     if (!popoverRef.current) return;
@@ -229,30 +241,48 @@ export default function OnboardingBanner({
     if (!target) return;
 
     const handleTargetClick = () => {
-      if (step.isAction) {
+      if (step.isAction || isLastStep) {
+        saveTourStep(page, stepIndex);
         return;
       }
-      if (!isLastStep) {
-        setStepIndex((current) => current + 1);
-      }
+
+      const nextIndex = stepIndex + 1;
+      setStepIndex(nextIndex);
+      saveTourStep(page, nextIndex);
     };
 
-    target.addEventListener("click", handleTargetClick, { capture: true });
+    target.addEventListener("click", handleTargetClick);
 
     return () => {
-      target.removeEventListener("click", handleTargetClick, { capture: true });
+      target.removeEventListener("click", handleTargetClick);
     };
-  }, [visible, step, stepIndex, isLastStep]);
+  }, [visible, step, stepIndex, isLastStep, page]);
 
   if (!visible || !step || steps.length === 0 || !mounted) return null;
 
   const content = (
     <div className="pointer-events-none fixed inset-0 z-[85] animate-in fade-in duration-300">
-      <SpotlightOverlay maskId={maskId} spotlight={hasTarget ? spotlight : null} />
+      <OverlayPanels
+        panels={overlayPanels}
+        fullScreen={!hasTarget || !spotlight}
+      />
+
+      {hasTarget && spotlight ? (
+        <div
+          className="pointer-events-none fixed rounded-lg border-2 border-white/90 tour-spotlight-ring"
+          style={{
+            left: spotlight.x,
+            top: spotlight.y,
+            width: spotlight.width,
+            height: spotlight.height,
+          }}
+          aria-hidden
+        />
+      ) : null}
 
       <button
         type="button"
-        onClick={onSkip}
+        onClick={handleSkip}
         className="pointer-events-auto fixed top-5 right-5 z-[87] rounded-lg border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm transition-colors hover:bg-black/60"
       >
         Skip tour
@@ -262,9 +292,7 @@ export default function OnboardingBanner({
         ref={popoverRef}
         role="dialog"
         aria-labelledby="onboarding-tour-title"
-        className={cn(
-          "pointer-events-auto fixed z-[87] rounded-xl border border-border/60 bg-card p-4 shadow-xl tour-step-enter",
-        )}
+        className="pointer-events-auto fixed z-[87] rounded-xl border border-border/60 bg-card p-4 shadow-xl tour-step-enter"
         style={{
           top: popoverPos.top,
           left: popoverPos.left,
@@ -292,7 +320,9 @@ export default function OnboardingBanner({
 
         {hasTarget ? (
           <p className="mt-3 text-xs font-medium text-foreground">
-            {step.isAction || isLastStep ? "Click the highlighted area" : "Click it, or press Next"}
+            {step.isAction || isLastStep
+              ? "Click the highlighted area"
+              : "Click it, or press Next"}
           </p>
         ) : null}
 
@@ -301,7 +331,11 @@ export default function OnboardingBanner({
             <Button
               size="sm"
               className="h-8"
-              onClick={() => setStepIndex((current) => current + 1)}
+              onClick={() => {
+                const nextIndex = stepIndex + 1;
+                setStepIndex(nextIndex);
+                saveTourStep(page, nextIndex);
+              }}
             >
               Next
             </Button>
@@ -311,7 +345,7 @@ export default function OnboardingBanner({
             size="sm"
             variant="ghost"
             className="h-8 text-muted-foreground"
-            onClick={onSkip}
+            onClick={handleSkip}
           >
             Skip
           </Button>

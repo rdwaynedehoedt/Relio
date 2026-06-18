@@ -20,6 +20,7 @@ import Masonry from "react-masonry-css";
 import AuthGuard from "@/components/AuthGuard";
 import NoteDrawer from "@/components/NoteDrawer";
 import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
+import { clearTourStep } from "@/lib/onboarding-tour";
 import Sidebar from "@/components/Sidebar";
 import SidebarInset from "@/components/SidebarInset";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,7 @@ export default function BrainPage() {
 
   useEffect(() => {
     if (notes.length > 0 && onboardingState && !onboardingState.pagesCompleted.brain) {
+      clearTourStep("brain");
       void markPageDone("brain");
     }
   }, [notes.length, markPageDone, onboardingState]);
@@ -188,6 +190,7 @@ export default function BrainPage() {
 
     const saved = await addNote(payload);
     setNotes((current) => sortNotes([saved, ...current]));
+    clearTourStep("brain");
     void markPageDone("brain");
   }
 

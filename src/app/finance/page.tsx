@@ -16,6 +16,7 @@ import {
 import AuthGuard from "@/components/AuthGuard";
 import CsvImportDialog from "@/components/finance/CsvImportDialog";
 import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
+import { clearTourStep } from "@/lib/onboarding-tour";
 import FixedDepositDrawer, {
   type FixedDepositFormValues,
 } from "@/components/finance/FixedDepositDrawer";
@@ -106,6 +107,7 @@ export default function FinancePage() {
 
   useEffect(() => {
     if (wallets.length > 0 && onboardingState && !onboardingState.pagesCompleted.finance) {
+      clearTourStep("finance");
       void markPageDone("finance");
     }
   }, [wallets.length, markPageDone, onboardingState]);
@@ -201,6 +203,7 @@ export default function FinancePage() {
     });
 
     setWallets((current) => [...current, wallet]);
+    clearTourStep("finance");
     void markPageDone("finance");
   }
 

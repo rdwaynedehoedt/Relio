@@ -17,6 +17,7 @@ import {
 import AuthGuard from "@/components/AuthGuard";
 import ContactDetail from "@/components/ContactDetail";
 import ContactDrawer from "@/components/ContactDrawer";
+import { clearTourStep } from "@/lib/onboarding-tour";
 import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
 import { PanelDeleteDialog } from "@/components/crm-panel";
 import Sidebar from "@/components/Sidebar";
@@ -127,6 +128,7 @@ function ContactsPageContent() {
 
   useEffect(() => {
     if (contacts.length > 0 && onboardingState && !onboardingState.pagesCompleted.contacts) {
+      clearTourStep("contacts");
       void markPageDone("contacts");
     }
   }, [contacts.length, markPageDone, onboardingState]);
@@ -362,6 +364,7 @@ function ContactsPageContent() {
           current.map((item) => (item.id === optimistic.id ? saved : item)),
         );
         setSelectedId(saved.id!);
+        clearTourStep("contacts");
         void markPageDone("contacts");
       } catch (error) {
         setContacts((current) =>

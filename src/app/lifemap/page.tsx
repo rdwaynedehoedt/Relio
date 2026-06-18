@@ -15,6 +15,7 @@ import AuthGuard from "@/components/AuthGuard";
 import GoalDrawer from "@/components/GoalDrawer";
 import LifeEventDrawer from "@/components/LifeEventDrawer";
 import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
+import { clearTourStep } from "@/lib/onboarding-tour";
 import BoardView from "@/components/lifemap/BoardView";
 import GoalDetailDialog from "@/components/lifemap/GoalDetailDialog";
 import GoalsGrid from "@/components/lifemap/GoalsGrid";
@@ -104,6 +105,7 @@ export default function LifeMapPage() {
 
   useEffect(() => {
     if (goals.length > 0 && onboardingState && !onboardingState.pagesCompleted.lifemap) {
+      clearTourStep("lifemap");
       void markPageDone("lifemap");
     }
   }, [goals.length, markPageDone, onboardingState]);
@@ -267,6 +269,7 @@ export default function LifeMapPage() {
 
     const saved = await addGoal(payload);
     setGoals((current) => [saved, ...current]);
+    clearTourStep("lifemap");
     void markPageDone("lifemap");
   }
 
