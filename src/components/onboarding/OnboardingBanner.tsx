@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { PAGE_ONBOARDING_STEPS, type OnboardingStep } from "@/lib/onboarding-utils";
 import {
   clearTourStep,
-  getOverlayPanels,
+  getHoleClipPath,
   getPopoverPosition,
   getSavedTourStep,
   getSpotlightRect,
@@ -22,7 +22,6 @@ import {
   saveTourStep,
   scheduleTourMeasure,
   scrollTourTargetIntoView,
-  type OverlayPanel,
   type PopoverPlacement,
   type SpotlightRect,
 } from "@/lib/onboarding-tour";
@@ -37,53 +36,24 @@ interface OnboardingBannerProps {
 
 function TourBackdrop({
   spotlight,
-  panels,
   fullScreen,
 }: {
   spotlight: SpotlightRect | null;
-  panels: OverlayPanel[];
   fullScreen: boolean;
 }) {
-  if (fullScreen) {
-    return (
-      <div
-        className="pointer-events-auto absolute inset-0 backdrop-blur-[2px] tour-fade-in"
-        style={{ backgroundColor: OVERLAY_COLOR }}
-        aria-hidden
-      />
-    );
-  }
+  const clipPath =
+    spotlight && !fullScreen ? getHoleClipPath(spotlight) : undefined;
 
   return (
-    <>
-      {spotlight ? (
-        <div
-          className="pointer-events-none absolute rounded-lg border-2 border-white/90 shadow-[0_0_0_1px_rgba(255,255,255,0.35)] tour-spotlight-ring tour-fade-in"
-          style={{
-            left: spotlight.x,
-            top: spotlight.y,
-            width: spotlight.width,
-            height: spotlight.height,
-            boxShadow: `0 0 0 9999px ${OVERLAY_COLOR}`,
-          }}
-          aria-hidden
-        />
-      ) : null}
-
-      {panels.map((panel, index) => (
-        <div
-          key={index}
-          className="pointer-events-auto absolute backdrop-blur-[2px] tour-fade-in"
-          style={{
-            top: panel.top,
-            left: panel.left,
-            width: panel.width,
-            height: panel.height,
-          }}
-          aria-hidden
-        />
-      ))}
-    </>
+    <div
+      className="pointer-events-auto fixed inset-0 backdrop-blur-[2px] tour-fade-in"
+      style={{
+        backgroundColor: OVERLAY_COLOR,
+        clipPath,
+        WebkitClipPath: clipPath,
+      }}
+      aria-hidden
+    />
   );
 }
 
@@ -152,7 +122,6 @@ export default function OnboardingBanner({
   const [stepIndex, setStepIndex] = useState(() => getSavedTourStep(page));
   const [mounted, setMounted] = useState(false);
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
-  const [overlayPanels, setOverlayPanels] = useState<OverlayPanel[]>([]);
   const [popoverPos, setPopoverPos] = useState({
     top: 0,
     left: 0,
@@ -177,7 +146,6 @@ export default function OnboardingBanner({
     const target = getTourTarget(step.target);
     const nextSpotlight = getSpotlightRect(target);
     setSpotlight(nextSpotlight);
-    setOverlayPanels(getOverlayPanels(nextSpotlight));
 
     const measuredHeight = popoverRef.current?.offsetHeight ?? popoverHeight;
     setPopoverPos(getPopoverPosition(nextSpotlight, measuredHeight));
@@ -294,14 +262,26 @@ export default function OnboardingBanner({
     <div className="tour-overlay-root animate-in fade-in duration-300">
       <TourBackdrop
         spotlight={hasTarget ? spotlight : null}
-        panels={overlayPanels}
         fullScreen={!hasTarget || !spotlight}
       />
+
+      {hasTarget && spotlight ? (
+        <div
+          className="pointer-events-none fixed rounded-lg border-2 border-white/90 shadow-[0_0_0_1px_rgba(255,255,255,0.35)] tour-spotlight-ring"
+          style={{
+            left: spotlight.x,
+            top: spotlight.y,
+            width: spotlight.width,
+            height: spotlight.height,
+          }}
+          aria-hidden
+        />
+      ) : null}
 
       <button
         type="button"
         onClick={handleSkip}
-        className="pointer-events-auto absolute top-5 right-5 z-[2] rounded-lg border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm transition-colors hover:bg-black/60"
+        className="pointer-events-auto fixed top-5 right-5 z-[2] rounded-lg border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm transition-colors hover:bg-black/60"
       >
         Skip tour
       </button>
@@ -310,7 +290,7 @@ export default function OnboardingBanner({
         ref={popoverRef}
         role="dialog"
         aria-labelledby="onboarding-tour-title"
-        className="pointer-events-auto absolute z-[2] rounded-xl border border-border/60 bg-card p-4 shadow-xl tour-step-enter"
+        className="pointer-events-auto fixed z-[2] rounded-xl border border-border/60 bg-card p-4 shadow-xl tour-step-enter"
         style={{
           top: popoverPos.top,
           left: popoverPos.left,

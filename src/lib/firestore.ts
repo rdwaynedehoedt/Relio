@@ -812,12 +812,20 @@ export async function addNote(
     }),
   );
 
-  return {
+  const saved: Note = {
     id: docRef.id,
     ...note,
     createdAt: now,
     updatedAt: now,
   };
+
+  await logActivity(
+    note.userId,
+    "note_added",
+    `Saved note "${note.title || "Untitled"}"`,
+  );
+
+  return saved;
 }
 
 export async function updateNote(
@@ -885,12 +893,16 @@ export async function addGoal(
     }),
   );
 
-  return {
+  const saved: Goal = {
     id: docRef.id,
     ...goal,
     createdAt: now,
     updatedAt: now,
   };
+
+  await logActivity(goal.userId, "goal_added", `Added goal "${goal.title}"`);
+
+  return saved;
 }
 
 export async function updateGoal(
@@ -946,11 +958,19 @@ export async function addLifeEvent(
     }),
   );
 
-  return {
+  const saved: LifeEvent = {
     id: docRef.id,
     ...event,
     createdAt: now,
   };
+
+  await logActivity(
+    event.userId,
+    "life_event_added",
+    `Added life event "${event.title}"`,
+  );
+
+  return saved;
 }
 
 export async function updateLifeEvent(

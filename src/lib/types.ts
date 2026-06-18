@@ -127,7 +127,10 @@ export type ActivityType =
   | "google_import"
   | "linkedin_import"
   | "vcf_import"
-  | "transactions_imported";
+  | "transactions_imported"
+  | "note_added"
+  | "goal_added"
+  | "life_event_added";
 
 export interface Activity {
   id?: string;

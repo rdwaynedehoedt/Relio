@@ -2,15 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
-  ArrowDownRight,
+  Brain,
   Building2,
-  Clock,
-  Download,
+  Flag,
   Landmark,
-  Lock,
-  UserPlus,
   Users,
   Wallet,
 } from "lucide-react";
@@ -23,8 +20,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { getInitials } from "@/lib/contact-utils";
 import {
+  getActiveGoals,
   getFdTimelinePoints,
   getRecentContacts,
+  getRecentNotes,
 } from "@/lib/dashboard-utils";
 import {
   fetchExchangeRates,
@@ -34,7 +33,6 @@ import {
   type ExchangeRates,
 } from "@/lib/finance-utils";
 import {
-  getActivities,
   getCompanies,
   getContacts,
   getFileImportMeta,
@@ -47,13 +45,15 @@ import {
   getWallets,
 } from "@/lib/firestore";
 import type {
-  Activity,
-  ActivityType,
   Contact,
   FixedDeposit,
+  Goal,
+  Note,
   Transaction,
   Wallet as WalletType,
 } from "@/lib/types";
+import { GOAL_STATUS_LABELS } from "@/lib/lifemap-utils";
+import { NOTE_TYPE_ICONS } from "@/lib/note-utils";
 import { getTimeGreeting, getUserFirstName } from "@/lib/user-utils";
 
 const DEFAULT_RATES: ExchangeRates = {
@@ -61,22 +61,6 @@ const DEFAULT_RATES: ExchangeRates = {
   GBP: 0,
   AED: 0,
   AUD: 0,
-};
-
-const ACTIVITY_ICONS: Record<
-  ActivityType,
-  React.ComponentType<{ className?: string }>
-> = {
-  contact_added: UserPlus,
-  company_added: Building2,
-  wallet_added: Wallet,
-  transaction_added: ArrowDownRight,
-  fd_added: Lock,
-  hubspot_import: Download,
-  google_import: Download,
-  linkedin_import: Download,
-  vcf_import: Download,
-  transactions_imported: Download,
 };
 
 export default function DashboardPage() {
@@ -87,10 +71,9 @@ export default function DashboardPage() {
   const [wallets, setWallets] = useState<WalletType[]>([]);
   const [fixedDeposits, setFixedDeposits] = useState<FixedDeposit[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [rates, setRates] = useState<ExchangeRates>(DEFAULT_RATES);
-  const [noteCount, setNoteCount] = useState(0);
-  const [goalCount, setGoalCount] = useState(0);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [hasIntegration, setHasIntegration] = useState(false);
 
   useEffect(() => {
@@ -106,7 +89,6 @@ export default function DashboardPage() {
           userWallets,
           fds,
           userTransactions,
-          userActivities,
           exchangeRates,
           userNotes,
           userGoals,
@@ -120,7 +102,6 @@ export default function DashboardPage() {
           getWallets(userId),
           getFixedDeposits(userId),
           getTransactions(userId),
-          getActivities(userId, 10),
           fetchExchangeRates().catch(() => DEFAULT_RATES),
           getNotes(userId),
           getGoals(userId),
@@ -135,10 +116,9 @@ export default function DashboardPage() {
         setWallets(userWallets);
         setFixedDeposits(fds);
         setTransactions(userTransactions);
-        setActivities(userActivities);
         setRates(exchangeRates);
-        setNoteCount(userNotes.length);
-        setGoalCount(userGoals.length);
+        setNotes(userNotes);
+        setGoals(userGoals);
         setHasIntegration(
           Boolean(
             hubspot?.token ||
@@ -159,10 +139,9 @@ export default function DashboardPage() {
 
   const firstName = getUserFirstName(user?.displayName, user?.email);
   const greeting = getTimeGreeting();
-  const hubspotCount = contacts.filter(
-    (contact) => contact.source === "hubspot",
-  ).length;
   const recentContacts = getRecentContacts(contacts);
+  const recentNotes = getRecentNotes(notes, 3);
+  const activeGoals = getActiveGoals(goals, 3);
   const fullNetWorth = useMemo(
     () => getNetWorthSummary(wallets, fixedDeposits, rates),
     [wallets, fixedDeposits, rates],
@@ -206,8 +185,8 @@ export default function DashboardPage() {
             <GettingStartedCard
               contactCount={contacts.length}
               walletCount={wallets.length}
-              noteCount={noteCount}
-              goalCount={goalCount}
+              noteCount={notes.length}
+              goalCount={goals.length}
               hasIntegration={hasIntegration}
             />
 
@@ -315,48 +294,110 @@ export default function DashboardPage() {
                 </div>
               </CommandCard>
 
-              <CommandCard title="Activity feed" subtitle="Latest across Relio">
-                {loading ? (
-                  <p className="py-8 text-sm text-muted-foreground">Loading...</p>
-                ) : activities.length === 0 ? (
-                  <p className="py-8 text-sm text-muted-foreground">
-                    No activity yet. Add a contact, wallet, or transaction to get
-                    started.
-                  </p>
-                ) : (
-                  <ul className="space-y-0">
-                    {activities.map((activity, index) => {
-                      const Icon = ACTIVITY_ICONS[activity.type] ?? Clock;
+              <CommandCard
+                title="Personal snapshot"
+                subtitle="Second Brain & Life Map"
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <MiniStat
+                    label="Notes"
+                    value={loading ? "—" : notes.length}
+                  />
+                  <MiniStat
+                    label="Goals"
+                    value={loading ? "—" : goals.length}
+                  />
+                </div>
 
-                      return (
-                        <li
-                          key={activity.id ?? `${activity.createdAt}-${index}`}
-                          className="relative flex gap-3 pb-5 last:pb-0"
-                        >
-                          {index < activities.length - 1 ? (
-                            <span className="absolute top-8 left-4 h-[calc(100%-12px)] w-px bg-border/60" />
-                          ) : null}
-                          <div className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-                            <Icon className="size-3.5 text-muted-foreground" />
-                          </div>
-                          <div className="min-w-0 flex-1 pt-0.5">
-                            <p className="text-sm text-foreground">
-                              {activity.description}
-                            </p>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                              {activity.createdAt
-                                ? formatDistanceToNow(
-                                    parseISO(activity.createdAt),
-                                    { addSuffix: true },
-                                  )
-                                : "Just now"}
-                            </p>
-                          </div>
+                <div className="mt-5 space-y-1">
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Recent notes
+                  </p>
+                  {loading ? (
+                    <p className="py-4 text-sm text-muted-foreground">Loading...</p>
+                  ) : recentNotes.length === 0 ? (
+                    <p className="py-4 text-sm text-muted-foreground">
+                      No notes yet
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border/40">
+                      {recentNotes.map((note) => {
+                        const NoteIcon = NOTE_TYPE_ICONS[note.type];
+
+                        return (
+                          <li key={note.id}>
+                            <Link
+                              href="/brain"
+                              className="flex items-center gap-3 py-2.5 transition-colors hover:text-foreground"
+                            >
+                              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
+                                <NoteIcon className="size-3.5 text-muted-foreground" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-foreground">
+                                  {note.title || "Untitled"}
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {note.type}
+                                </p>
+                              </div>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+
+                <Link
+                  href="/brain"
+                  className="mt-3 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Open Second Brain
+                </Link>
+
+                <div className="mt-5 border-t border-border/40 pt-5 space-y-1">
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Active goals
+                  </p>
+                  {loading ? (
+                    <p className="py-4 text-sm text-muted-foreground">Loading...</p>
+                  ) : activeGoals.length === 0 ? (
+                    <p className="py-4 text-sm text-muted-foreground">
+                      No active goals yet
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border/40">
+                      {activeGoals.map((goal) => (
+                        <li key={goal.id}>
+                          <Link
+                            href="/lifemap"
+                            className="flex items-center gap-3 py-2.5 transition-colors hover:text-foreground"
+                          >
+                            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-base">
+                              {goal.coverEmoji || "🎯"}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-foreground">
+                                {goal.title}
+                              </p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {GOAL_STATUS_LABELS[goal.status]}
+                              </p>
+                            </div>
+                          </Link>
                         </li>
-                      );
-                    })}
-                  </ul>
-                )}
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <Link
+                  href="/lifemap"
+                  className="mt-3 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Open Life Map
+                </Link>
               </CommandCard>
             </section>
 
@@ -374,9 +415,14 @@ export default function DashboardPage() {
                   icon={Building2}
                 />
                 <OverviewStat
-                  label="HubSpot Contacts"
-                  value={loading ? "—" : hubspotCount}
-                  icon={Download}
+                  label="Notes"
+                  value={loading ? "—" : notes.length}
+                  icon={Brain}
+                />
+                <OverviewStat
+                  label="Goals"
+                  value={loading ? "—" : goals.length}
+                  icon={Flag}
                 />
                 <OverviewStat
                   label="Total Wallets"

@@ -1,6 +1,5 @@
 import { differenceInDays, parseISO } from "date-fns";
-import type { Contact } from "@/lib/types";
-import type { FixedDeposit } from "@/lib/types";
+import type { Contact, FixedDeposit, Goal, Note } from "@/lib/types";
 import {
   convertCurrencyToLkr,
   type ExchangeRates,
@@ -29,6 +28,27 @@ export function getRecentContacts(
 ): Contact[] {
   return [...contacts]
     .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
+    .slice(0, limit);
+}
+
+export function getRecentNotes(notes: Note[], limit = 5): Note[] {
+  return [...notes]
+    .sort((a, b) =>
+      (b.updatedAt ?? b.createdAt ?? "").localeCompare(
+        a.updatedAt ?? a.createdAt ?? "",
+      ),
+    )
+    .slice(0, limit);
+}
+
+export function getActiveGoals(goals: Goal[], limit = 5): Goal[] {
+  return [...goals]
+    .filter((goal) => goal.status === "active" || goal.status === "dream")
+    .sort((a, b) =>
+      (b.updatedAt ?? b.createdAt ?? "").localeCompare(
+        a.updatedAt ?? a.createdAt ?? "",
+      ),
+    )
     .slice(0, limit);
 }
 

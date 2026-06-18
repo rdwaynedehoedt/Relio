@@ -24,13 +24,6 @@ export interface PopoverPosition {
   arrowOffset: number;
 }
 
-export interface OverlayPanel {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
 function tourStepKey(page: OnboardingPage) {
   return `relio-tour-step-${page}`;
 }
@@ -108,57 +101,13 @@ export function getSpotlightRect(element: HTMLElement | null): SpotlightRect | n
   };
 }
 
-function clampSpotlightToViewport(spotlight: SpotlightRect): SpotlightRect {
-  const { width: viewportW, height: viewportH } = getViewportSize();
+export function getHoleClipPath(spotlight: SpotlightRect): string {
+  const x = Math.round(spotlight.x);
+  const y = Math.round(spotlight.y);
+  const x2 = Math.round(spotlight.x + spotlight.width);
+  const y2 = Math.round(spotlight.y + spotlight.height);
 
-  const x = Math.max(0, Math.min(spotlight.x, viewportW));
-  const y = Math.max(0, Math.min(spotlight.y, viewportH));
-  const right = Math.min(spotlight.x + spotlight.width, viewportW);
-  const bottom = Math.min(spotlight.y + spotlight.height, viewportH);
-
-  const width = Math.max(0, right - x);
-  const height = Math.max(0, bottom - y);
-
-  return {
-    x,
-    y,
-    width,
-    height,
-    centerX: x + width / 2,
-    centerY: y + height / 2,
-  };
-}
-
-export function getOverlayPanels(spotlight: SpotlightRect | null): OverlayPanel[] {
-  const { width: viewportW, height: viewportH } = getViewportSize();
-
-  if (!spotlight) {
-    return [{ top: 0, left: 0, width: viewportW, height: viewportH }];
-  }
-
-  const hole = clampSpotlightToViewport(spotlight);
-  const { x, y, width, height } = hole;
-
-  if (width <= 0 || height <= 0) {
-    return [{ top: 0, left: 0, width: viewportW, height: viewportH }];
-  }
-
-  return [
-    { top: 0, left: 0, width: viewportW, height: Math.max(0, y) },
-    { top: y, left: 0, width: Math.max(0, x), height },
-    {
-      top: y,
-      left: x + width,
-      width: Math.max(0, viewportW - x - width),
-      height,
-    },
-    {
-      top: y + height,
-      left: 0,
-      width: viewportW,
-      height: Math.max(0, viewportH - y - height),
-    },
-  ];
+  return `polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${x}px ${y}px, ${x2}px ${y}px, ${x2}px ${y2}px, ${x}px ${y2}px, ${x}px ${y}px)`;
 }
 
 export function getPopoverPosition(

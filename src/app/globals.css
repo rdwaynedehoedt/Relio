@@ -19,27 +19,12 @@ body {
   isolation: isolate;
 }
 
-/* Counter-scale tour layer so spotlight coords match getBoundingClientRect with html zoom */
+/* Full-viewport tour overlay — must cover sidebar, footer, and all fixed UI */
 .tour-overlay-root {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   z-index: 85;
   pointer-events: none;
-  transform-origin: top left;
-  zoom: calc(1 / var(--ui-scale));
-  width: calc(100vw * var(--ui-scale));
-  height: calc(100dvh * var(--ui-scale));
-  overflow: hidden;
-}
-
-@supports not (zoom: 1) {
-  .tour-overlay-root {
-    zoom: normal;
-    transform: scale(calc(1 / var(--ui-scale)));
-    width: calc(100vw * var(--ui-scale));
-    height: calc(100dvh * var(--ui-scale));
-  }
 }
 
 .tour-fade-in {
