@@ -57,6 +57,7 @@ import {
   getFixedDeposits,
   getTransactions,
   getWallets,
+  logActivity,
   updateWallet,
 } from "@/lib/firestore";
 import type {
@@ -230,6 +231,12 @@ export default function FinancePage() {
         item.id === wallet.id ? { ...item, balance: nextBalance } : item,
       ),
     );
+
+    await logActivity(
+      user.uid,
+      "transaction_added",
+      `Added transaction — ${data.category} ${formatMoney(data.amount, wallet.currency)}`,
+    );
   }
 
   async function handleCsvImport(rows: CsvTransactionRow[], walletId: string) {
@@ -263,6 +270,12 @@ export default function FinancePage() {
       current.map((item) =>
         item.id === wallet.id ? { ...item, balance: nextBalance } : item,
       ),
+    );
+
+    await logActivity(
+      user.uid,
+      "transactions_imported",
+      `Imported ${created.length} transaction${created.length === 1 ? "" : "s"} from CSV`,
     );
   }
 

@@ -1,4 +1,4 @@
-import { format, isToday, isYesterday } from "date-fns";
+import { format, isToday, isYesterday, differenceInDays, parseISO } from "date-fns";
 import { getCountryFlag } from "@/lib/country-utils";
 import type { Contact } from "@/lib/types";
 
@@ -87,6 +87,27 @@ export function getUniqueTags(contacts: Contact[]) {
   });
 
   return Array.from(tags).sort();
+}
+
+export const STALE_CONTACT_DAYS = 30;
+
+export function isStaleContact(
+  contact: Contact,
+  days = STALE_CONTACT_DAYS,
+): boolean {
+  const dateStr =
+    contact.lastInteractionDate ?? contact.updatedAt ?? contact.createdAt;
+  if (!dateStr) return true;
+
+  const daysSince = differenceInDays(new Date(), parseISO(dateStr));
+  return daysSince > days;
+}
+
+export function countStaleContacts(
+  contacts: Contact[],
+  days = STALE_CONTACT_DAYS,
+): number {
+  return contacts.filter((contact) => isStaleContact(contact, days)).length;
 }
 
 export function matchesFilters(

@@ -14,6 +14,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type {
+  Activity,
+  ActivityType,
   Company,
   Contact,
   FixedDeposit,
@@ -137,6 +139,7 @@ async function ensureCompanyExists(
 
 export async function addCompany(
   company: Omit<Company, "id" | "createdAt" | "updatedAt">,
+  options?: { skipActivity?: boolean },
 ): Promise<Company> {
   if (!db) throw new Error("Firestore is not configured.");
 
@@ -147,12 +150,22 @@ export async function addCompany(
     updatedAt: now,
   });
 
-  return {
+  const saved: Company = {
     id: docRef.id,
     ...company,
     createdAt: now,
     updatedAt: now,
   };
+
+  if (!options?.skipActivity) {
+    await logActivity(
+      company.userId,
+      "company_added",
+      `Added company ${company.name}`,
+    );
+  }
+
+  return saved;
 }
 
 export async function updateCompany(
@@ -177,6 +190,7 @@ export async function deleteCompany(id: string): Promise<void> {
 
 export async function addContact(
   contact: Omit<Contact, "id" | "createdAt" | "updatedAt">,
+  options?: { skipActivity?: boolean },
 ): Promise<Contact> {
   if (!db) throw new Error("Firestore is not configured.");
 
@@ -200,6 +214,14 @@ export async function addContact(
       country: contact.country,
       city: contact.city,
     });
+  }
+
+  if (!options?.skipActivity) {
+    await logActivity(
+      contact.userId,
+      "contact_added",
+      `Added contact ${contact.firstName} ${contact.lastName}`.trim(),
+    );
   }
 
   return saved;
@@ -383,11 +405,19 @@ export async function addWallet(
     createdAt: now,
   });
 
-  return {
+  const saved: Wallet = {
     id: docRef.id,
     ...wallet,
     createdAt: now,
   };
+
+  await logActivity(
+    wallet.userId,
+    "wallet_added",
+    `Added wallet ${wallet.name}`,
+  );
+
+  return saved;
 }
 
 export async function updateWallet(
@@ -496,11 +526,25 @@ export async function addFixedDeposit(
     createdAt: now,
   });
 
-  return {
+  const saved: FixedDeposit = {
     id: docRef.id,
     ...fd,
     createdAt: now,
   };
+
+  const amountLabel = new Intl.NumberFormat("en-LK", {
+    style: "currency",
+    currency: fd.currency === "LKR" ? "LKR" : fd.currency,
+    maximumFractionDigits: 0,
+  }).format(fd.principalAmount);
+
+  await logActivity(
+    fd.userId,
+    "fd_added",
+    `Added FD — ${fd.bankName} ${amountLabel}`,
+  );
+
+  return saved;
 }
 
 export async function updateFixedDeposit(
@@ -518,4 +562,39 @@ export async function deleteFixedDeposit(id: string): Promise<void> {
   if (!db) throw new Error("Firestore is not configured.");
 
   await deleteDoc(doc(db, "fixedDeposits", id));
+}
+
+export async function logActivity(
+  userId: string,
+  type: ActivityType,
+  description: string,
+): Promise<void> {
+  if (!db) return;
+
+  try {
+    await addDoc(collection(db, "activities"), {
+      userId,
+      type,
+      description,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Failed to log activity:", error);
+  }
+}
+
+export async function getActivities(
+  userId: string,
+  limit = 10,
+): Promise<Activity[]> {
+  if (!db) return [];
+
+  const snapshot = await getDocs(
+    query(collection(db, "activities"), where("userId", "==", userId)),
+  );
+
+  return snapshot.docs
+    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as Activity)
+    .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
+    .slice(0, limit);
 }

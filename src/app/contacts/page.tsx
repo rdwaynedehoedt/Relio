@@ -35,6 +35,7 @@ import {
   getInitials,
   getUniqueTags,
   getUniqueValues,
+  isStaleContact,
   matchesFilters,
   sortContacts,
   formValuesToContact,
@@ -159,6 +160,8 @@ function ContactsPageContent() {
     }
   }, [searchParams]);
 
+  const reconnectFilter = searchParams.get("filter") === "reconnect";
+
   const selectedContact =
     contacts.find((contact) => contact.id === selectedId) ?? null;
 
@@ -182,6 +185,10 @@ function ContactsPageContent() {
         return false;
       }
 
+      if (reconnectFilter && !isStaleContact(contact)) {
+        return false;
+      }
+
       return true;
     });
   }, [
@@ -194,6 +201,7 @@ function ContactsPageContent() {
     leadStatusFilter,
     customFilters,
     activeTab,
+    reconnectFilter,
   ]);
 
   const sortedContacts = useMemo(

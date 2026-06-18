@@ -3,6 +3,7 @@ import {
   addContact,
   getCompanyByHubspotId,
   getContactByHubspotId,
+  logActivity,
   updateHubSpotLastSynced,
 } from "@/lib/firestore";
 import type {
@@ -114,7 +115,9 @@ export async function syncHubSpotData(
     const existing = await getContactByHubspotId(userId, contact.hubspotId);
     if (existing) continue;
 
-    await addContact(contactToFirestore(contact, userId));
+    await addContact(contactToFirestore(contact, userId), {
+      skipActivity: true,
+    });
 
     contactsImported += 1;
     onProgress?.(`Syncing contacts... ${contactsImported} imported`);
@@ -127,7 +130,9 @@ export async function syncHubSpotData(
     const existing = await getCompanyByHubspotId(userId, company.hubspotId);
     if (existing) continue;
 
-    await addCompany(companyToFirestore(company, userId));
+    await addCompany(companyToFirestore(company, userId), {
+      skipActivity: true,
+    });
 
     companiesImported += 1;
     onProgress?.(`Syncing companies... ${companiesImported} imported`);
@@ -135,6 +140,14 @@ export async function syncHubSpotData(
 
   await updateHubSpotLastSynced(userId);
   const syncedAt = new Date().toISOString();
+
+  if (contactsImported > 0) {
+    await logActivity(
+      userId,
+      "hubspot_import",
+      `Imported ${contactsImported} contact${contactsImported === 1 ? "" : "s"} from HubSpot`,
+    );
+  }
 
   onProgress?.(
     `Sync complete — ${contactsImported} contacts, ${companiesImported} companies imported`,

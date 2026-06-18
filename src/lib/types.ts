@@ -116,6 +116,23 @@ export interface FixedDeposit {
   createdAt?: string;
 }
 
+export type ActivityType =
+  | "contact_added"
+  | "company_added"
+  | "wallet_added"
+  | "transaction_added"
+  | "fd_added"
+  | "hubspot_import"
+  | "transactions_imported";
+
+export interface Activity {
+  id?: string;
+  userId: string;
+  type: ActivityType;
+  description: string;
+  createdAt?: string;
+}
+
 export interface UserPreferences {
   theme: ThemeMode;
   defaultCountry?: string;
