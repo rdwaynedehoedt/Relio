@@ -9,14 +9,19 @@ import {
 } from "react";
 import {
   GoogleAuthProvider,
+  EmailAuthProvider,
+  createUserWithEmailAndPassword,
   deleteUser,
   isSignInWithEmailLink,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   reauthenticateWithPopup,
   sendSignInLinkToEmail,
+  signInWithEmailAndPassword,
   signInWithEmailLink,
   signInWithPopup,
   signOut as firebaseSignOut,
+  updateProfile,
   type User,
 } from "firebase/auth";
 import { auth, googleContactsProvider, googleProvider } from "@/lib/firebase";
@@ -34,11 +39,17 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   signIn: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    displayName: string,
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   sendMagicLink: (email: string) => Promise<void>;
   completeMagicLinkSignIn: (email: string, url: string) => Promise<void>;
   connectGoogleContacts: () => Promise<string | null>;
-  deleteAccount: () => Promise<void>;
+  deleteAccount: (password?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -102,20 +113,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithPopup(auth, googleProvider);
   };
 
+  const signInWithEmail = async (email: string, password: string) => {
+    if (!auth) {
+      throw new Error("Firebase is not configured. Add credentials to .env.local.");
+    }
+
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signUpWithEmail = async (
+    email: string,
+    password: string,
+    displayName: string,
+  ) => {
+    if (!auth) {
+      throw new Error("Firebase is not configured. Add credentials to .env.local.");
+    }
+
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+
+    if (displayName.trim()) {
+      await updateProfile(credential.user, { displayName: displayName.trim() });
+    }
+  };
+
   const signOut = async () => {
     if (!auth) return;
 
     await firebaseSignOut(auth);
   };
 
-  const deleteAccount = async () => {
+  const deleteAccount = async (password?: string) => {
     if (!auth?.currentUser) {
       throw new Error("You must be signed in to delete your account.");
     }
 
     const firebaseUser = auth.currentUser;
+    const providerIds = firebaseUser.providerData.map((provider) => provider.providerId);
+    const hasPassword = providerIds.includes("password");
+    const hasGoogle = providerIds.includes("google.com");
 
-    await reauthenticateWithPopup(firebaseUser, googleProvider);
+    if (hasPassword) {
+      if (!password?.trim()) {
+        throw new Error("Enter your password to confirm account deletion.");
+      }
+
+      if (!firebaseUser.email) {
+        throw new Error("Your account email could not be verified.");
+      }
+
+      await reauthenticateWithCredential(
+        firebaseUser,
+        EmailAuthProvider.credential(firebaseUser.email, password.trim()),
+      );
+    } else if (hasGoogle) {
+      await reauthenticateWithPopup(firebaseUser, googleProvider);
+    } else {
+      throw new Error("Unable to verify your identity for account deletion.");
+    }
+
     await deleteAllUserData(firebaseUser.uid);
     await deleteUser(firebaseUser);
   };
@@ -151,6 +207,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         signIn,
+        signInWithEmail,
+        signUpWithEmail,
         signOut,
         sendMagicLink,
         completeMagicLinkSignIn,

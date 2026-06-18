@@ -32,8 +32,8 @@ const items: BentoItem[] = [
   },
   {
     icon: Link2,
-    title: "Magic link login",
-    description: "No passwords",
+    title: "Email & password",
+    description: "Create an account in seconds",
   },
   {
     icon: Smartphone,

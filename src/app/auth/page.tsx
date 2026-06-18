@@ -6,9 +6,12 @@ import { Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { useAuth } from "@/context/AuthContext";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { cn } from "@/lib/utils";
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
+
+type AuthMode = "sign-in" | "sign-up";
 
 function GoogleIcon() {
   return (
@@ -33,13 +36,20 @@ function GoogleIcon() {
   );
 }
 
+const inputClassName = cn(
+  "h-11 w-full rounded-full border border-neutral-200 bg-white px-4 text-sm text-[#0a0a0a] outline-none transition-colors",
+  "placeholder:text-neutral-400 focus:border-neutral-400",
+);
+
 export default function AuthPage() {
-  const { user, loading, signIn, sendMagicLink } = useAuth();
+  const { user, loading, signIn, signInWithEmail, signUpWithEmail } = useAuth();
   const router = useRouter();
+  const [mode, setMode] = useState<AuthMode>("sign-in");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [formLoading, setFormLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [magicLoading, setMagicLoading] = useState(false);
-  const [magicSent, setMagicSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,34 +65,29 @@ export default function AuthPage() {
     try {
       await signIn();
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Google sign-in failed. Please try again.",
-      );
+      setError(getAuthErrorMessage(err));
     } finally {
       setGoogleLoading(false);
     }
   }
 
-  async function handleMagicLink(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !password.trim()) return;
 
     setError(null);
-    setMagicLoading(true);
+    setFormLoading(true);
 
     try {
-      await sendMagicLink(email.trim());
-      setMagicSent(true);
+      if (mode === "sign-up") {
+        await signUpWithEmail(email.trim(), password, name.trim());
+      } else {
+        await signInWithEmail(email.trim(), password);
+      }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not send sign-in link. Please try again.",
-      );
+      setError(getAuthErrorMessage(err));
     } finally {
-      setMagicLoading(false);
+      setFormLoading(false);
     }
   }
 
@@ -115,94 +120,115 @@ export default function AuthPage() {
           className="mt-8 text-center"
         >
           <h1 className="text-3xl font-light tracking-tight text-[#0a0a0a] sm:text-4xl">
-            {magicSent ? "Check your inbox" : "Welcome back"}
+            {mode === "sign-in" ? "Welcome back" : "Create your account"}
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-neutral-500 sm:text-base">
-            {magicSent
-              ? `We sent a sign-in link to ${email}. Click it to continue.`
-              : "Sign in to your personal OS for relationships, finances, and life."}
+            {mode === "sign-in"
+              ? "Sign in to your personal OS for relationships, finances, and life."
+              : "Set up your Relio account in seconds. Email and password — that's it."}
           </p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: easeOut, delay: 0.2 }}
-          className="mt-10"
+          transition={{ duration: 0.5, ease: easeOut, delay: 0.15 }}
+          className="mt-8 flex rounded-full border border-neutral-200 bg-neutral-50 p-1"
         >
-          {magicSent ? (
-            <div className="space-y-4 text-center">
-              <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50 px-5 py-6">
-                <p className="text-4xl leading-none">✉️</p>
-                <p className="mt-4 text-sm text-neutral-500">
-                  The link expires soon. Check spam if you don&apos;t see it.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setMagicSent(false);
-                  setError(null);
-                }}
-                className="text-sm text-neutral-500 underline-offset-4 transition-colors hover:text-[#0a0a0a] hover:underline"
-              >
-                Use a different email
-              </button>
+          {(["sign-in", "sign-up"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => {
+                setMode(tab);
+                setError(null);
+              }}
+              className={cn(
+                "flex-1 rounded-full py-2 text-sm font-medium transition-colors",
+                mode === tab
+                  ? "bg-white text-[#0a0a0a] shadow-sm"
+                  : "text-neutral-500 hover:text-[#0a0a0a]",
+              )}
+            >
+              {tab === "sign-in" ? "Sign in" : "Create account"}
+            </button>
+          ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: easeOut, delay: 0.2 }}
+          className="mt-8"
+        >
+          <form onSubmit={(event) => void handleSubmit(event)} className="space-y-3">
+            {mode === "sign-up" ? (
+              <input
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Your name"
+                required
+                autoComplete="name"
+                className={inputClassName}
+              />
+            ) : null}
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@company.com"
+              required
+              autoComplete="email"
+              className={inputClassName}
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Password"
+              required
+              minLength={6}
+              autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
+              className={inputClassName}
+            />
+            <button
+              type="submit"
+              disabled={formLoading}
+              className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#0a0a0a] text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {formLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : mode === "sign-in" ? (
+                "Sign in"
+              ) : (
+                "Create account"
+              )}
+            </button>
+          </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-neutral-200" />
             </div>
-          ) : (
-            <>
-              <form onSubmit={(event) => void handleMagicLink(event)} className="space-y-3">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@company.com"
-                  required
-                  autoComplete="email"
-                  className={cn(
-                    "h-11 w-full rounded-full border border-neutral-200 bg-white px-4 text-sm text-[#0a0a0a] outline-none transition-colors",
-                    "placeholder:text-neutral-400 focus:border-neutral-400",
-                  )}
-                />
-                <button
-                  type="submit"
-                  disabled={magicLoading}
-                  className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#0a0a0a] text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                >
-                  {magicLoading ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    "Send magic link"
-                  )}
-                </button>
-              </form>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-xs text-neutral-400">or</span>
+            </div>
+          </div>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-neutral-200" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-white px-3 text-xs text-neutral-400">or</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                disabled={googleLoading}
-                onClick={() => void handleGoogleSignIn()}
-                className={cn(
-                  "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full border border-neutral-200 bg-white text-sm font-medium text-[#0a0a0a] transition-colors hover:bg-neutral-50 disabled:opacity-60",
-                )}
-              >
-                {googleLoading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <GoogleIcon />
-                )}
-                Continue with Google
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            disabled={googleLoading}
+            onClick={() => void handleGoogleSignIn()}
+            className="inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full border border-neutral-200 bg-white text-sm font-medium text-[#0a0a0a] transition-colors hover:bg-neutral-50 disabled:opacity-60"
+          >
+            {googleLoading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <GoogleIcon />
+            )}
+            Continue with Google
+          </button>
 
           {error ? (
             <p className="mt-4 text-center text-sm text-red-600">{error}</p>

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { userHasPasswordProvider } from "@/lib/auth-errors";
 import { clearTourStep } from "@/lib/onboarding-tour";
 import type { OnboardingPage } from "@/lib/types";
 
@@ -36,16 +37,21 @@ const TOUR_PAGES: OnboardingPage[] = [
 ];
 
 export default function DeleteAccountSection() {
-  const { deleteAccount } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
+  const [password, setPassword] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const needsPassword = userHasPasswordProvider(
+    user?.providerData.map((provider) => provider.providerId) ?? [],
+  );
 
   useEffect(() => {
     if (!open) {
       setConfirmInput("");
+      setPassword("");
       setError(null);
     }
   }, [open]);
@@ -57,7 +63,7 @@ export default function DeleteAccountSection() {
     setError(null);
 
     try {
-      await deleteAccount();
+      await deleteAccount(needsPassword ? password : undefined);
       TOUR_PAGES.forEach((page) => clearTourStep(page));
       router.replace("/auth");
     } catch (err) {
@@ -130,7 +136,8 @@ export default function DeleteAccountSection() {
             </div>
             <DialogDescription className="text-left text-[13px] leading-relaxed text-muted-foreground">
               All personal data in your Relio workspace will be erased. You will
-              be asked to sign in with Google again to confirm this action.
+              be asked to confirm this action
+              {needsPassword ? " with your password" : " by signing in with Google again"}.
             </DialogDescription>
           </DialogHeader>
 
@@ -150,6 +157,22 @@ export default function DeleteAccountSection() {
               autoComplete="off"
               disabled={deleting}
             />
+            {needsPassword ? (
+              <>
+                <label className="block pt-2 text-[13px] text-muted-foreground">
+                  Your password
+                </label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Enter your password"
+                  className="h-9 border-0 bg-muted/50 text-[13px] shadow-none ring-0 focus-visible:ring-0"
+                  autoComplete="current-password"
+                  disabled={deleting}
+                />
+              </>
+            ) : null}
             {error ? (
               <p className="text-[13px] text-destructive">{error}</p>
             ) : null}
@@ -170,7 +193,7 @@ export default function DeleteAccountSection() {
               size="sm"
               className="h-9 px-3"
               onClick={() => void handleDelete()}
-              disabled={deleting || !confirmed}
+              disabled={deleting || !confirmed || (needsPassword && !password.trim())}
             >
               {deleting ? (
                 <>
