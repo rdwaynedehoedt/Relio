@@ -31,7 +31,7 @@ import {
   storeEmailForSignIn,
 } from "@/lib/auth-utils";
 import { clearAuthCookie, setAuthCookie } from "@/lib/auth-cookie";
-import { deleteAllUserData, saveGoogleIntegration } from "@/lib/firestore";
+import { deleteAllUserData, saveGoogleIntegration, syncUserProfile } from "@/lib/firestore";
 
 export const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
 
@@ -69,6 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       if (user) {
         setAuthCookie();
+        void syncUserProfile(user.uid, {
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          providers: user.providerData.map((provider) => provider.providerId),
+          authCreatedAt: user.metadata.creationTime ?? undefined,
+        });
       } else {
         clearAuthCookie();
       }

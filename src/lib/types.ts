@@ -177,6 +177,15 @@ export interface UserPreferences {
   birthYear?: number;
 }
 
+export interface UserProfile {
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  providers: string[];
+  createdAt: string;
+  lastLoginAt: string;
+}
+
 export type OnboardingPage =
   | "contacts"
   | "companies"

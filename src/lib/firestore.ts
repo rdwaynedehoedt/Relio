@@ -30,6 +30,7 @@ import type {
   Transaction,
   TransactionFilters,
   UserPreferences,
+  UserProfile,
   Wallet,
 } from "@/lib/types";
 import { filterTransactions } from "@/lib/finance-utils";
@@ -39,6 +40,40 @@ function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, value]) => value !== undefined),
   ) as T;
+}
+
+export async function syncUserProfile(
+  userId: string,
+  data: {
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+    providers: string[];
+    authCreatedAt?: string;
+  },
+): Promise<void> {
+  if (!db) return;
+
+  const now = new Date().toISOString();
+  const profileRef = doc(db, "users", userId);
+  const existing = await getDoc(profileRef);
+  const existingData = existing.data() as UserProfile | undefined;
+
+  await setDoc(
+    profileRef,
+    omitUndefined({
+      email: data.email,
+      displayName: data.displayName,
+      photoURL: data.photoURL,
+      providers: data.providers,
+      createdAt:
+        existingData?.createdAt ??
+        data.authCreatedAt ??
+        now,
+      lastLoginAt: now,
+    }),
+    { merge: true },
+  );
 }
 
 function parseContact(docSnap: { id: string; data: () => Record<string, unknown> }): Contact {
