@@ -556,11 +556,11 @@ function ContactsPageContent() {
       <div className="min-h-screen bg-background">
         <Sidebar />
 
-        <main className="pl-72">
-          <div className="flex h-screen">
+        <main className="h-screen overflow-hidden pl-72">
+          <div className="flex h-full min-h-0 overflow-hidden">
             <section
               className={cn(
-                "flex min-w-0 flex-col bg-background transition-all duration-300 ease-out",
+                "flex h-full min-h-0 flex-col bg-background transition-all duration-300 ease-out",
                 selectedContact ? "w-[58%] border-r border-border/50" : "w-full",
               )}
               onClick={handleLeftPanelClick}
@@ -643,7 +643,7 @@ function ContactsPageContent() {
               </div>
 
               <div
-                className="flex items-center gap-1.5 px-5 py-2"
+                className="flex items-center gap-1.5 px-6 py-2"
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="relative max-w-sm flex-1">
@@ -677,7 +677,7 @@ function ContactsPageContent() {
               </div>
 
               <div
-                className="flex flex-wrap items-center gap-1.5 px-5 pb-2"
+                className="flex flex-wrap items-center gap-1.5 px-6 pb-2"
                 onClick={(event) => event.stopPropagation()}
               >
                 <HubSpotFilterPill
@@ -741,7 +741,7 @@ function ContactsPageContent() {
 
               {checkedIds.size > 0 ? (
                 <div
-                  className="flex items-center justify-between border-y border-border/40 bg-muted/20 px-5 py-2"
+                  className="flex items-center justify-between border-y border-border/40 bg-muted/20 px-6 py-2"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -810,7 +810,7 @@ function ContactsPageContent() {
                   <table className="w-full min-w-[960px] text-[13px]">
                     <thead className="sticky top-0 z-10 bg-background/90 backdrop-blur-md">
                       <tr className="border-b border-border/40 text-left">
-                        <th className="w-9 px-5 py-2">
+                        <th className="w-9 px-6 py-2">
                           <input
                             type="checkbox"
                             className="size-3.5 rounded border-border/60 accent-foreground"
@@ -828,7 +828,7 @@ function ContactsPageContent() {
                         {orderedVisibleColumns.map((column) => (
                           <th
                             key={column.id}
-                            className="px-5 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase"
+                            className="px-6 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase"
                             style={{ minWidth: column.minWidth }}
                           >
                             {column.label}
@@ -854,7 +854,7 @@ function ContactsPageContent() {
                               isChecked && "bg-muted/25",
                             )}
                           >
-                            <td className="px-5 py-2" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-6 py-2" onClick={(e) => e.stopPropagation()}>
                               <input
                                 type="checkbox"
                                 className={cn(
@@ -869,7 +869,7 @@ function ContactsPageContent() {
                               />
                             </td>
                             {orderedVisibleColumns.map((column) => (
-                              <td key={column.id} className="px-5 py-2">
+                              <td key={column.id} className="px-6 py-2">
                                 <ContactTableCell
                                   contact={contact}
                                   columnId={column.id}
@@ -885,7 +885,7 @@ function ContactsPageContent() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between border-t border-border/40 px-5 py-2.5 text-xs text-muted-foreground">
+              <div className="flex shrink-0 items-center justify-between border-t border-border/40 px-6 py-2.5 text-xs text-muted-foreground">
                 <div className="flex items-center gap-3">
                   <span>
                     {sortedContacts.length} contact

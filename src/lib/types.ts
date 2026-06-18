@@ -65,6 +65,57 @@ export interface Company {
 
 export type ThemeMode = "system" | "light" | "dark";
 
+export type WalletCurrency = "USD" | "GBP" | "AED" | "AUD" | "LKR";
+
+export interface Wallet {
+  id?: string;
+  name: string;
+  currency: WalletCurrency;
+  balance: number;
+  color: string;
+  userId: string;
+  createdAt?: string;
+}
+
+export type TransactionType = "income" | "expense";
+
+export interface Transaction {
+  id?: string;
+  walletId: string;
+  amount: number;
+  type: TransactionType;
+  category: string;
+  description: string;
+  date: string;
+  userId: string;
+  createdAt?: string;
+}
+
+export interface TransactionFilters {
+  walletId?: string;
+  category?: string;
+  month?: string;
+}
+
+export interface FixedDeposit {
+  id?: string;
+  userId: string;
+  bankName: string;
+  accountNumber: string;
+  branch?: string;
+  currency: string;
+  principalAmount: number;
+  currentBalance: number;
+  interestRate: number;
+  openedDate: string;
+  maturityDate: string;
+  nextInterestPayment?: string;
+  nextInterestAmount?: number;
+  interestDispositionAccount?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
 export interface UserPreferences {
   theme: ThemeMode;
   defaultCountry?: string;

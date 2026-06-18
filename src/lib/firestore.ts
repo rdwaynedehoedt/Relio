@@ -10,14 +10,20 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type {
   Company,
   Contact,
+  FixedDeposit,
   HubSpotIntegration,
+  Transaction,
+  TransactionFilters,
   UserPreferences,
+  Wallet,
 } from "@/lib/types";
+import { filterTransactions } from "@/lib/finance-utils";
 
 function parseContact(docSnap: { id: string; data: () => Record<string, unknown> }): Contact {
   const { leadStatus: _removed, ...data } = docSnap.data();
@@ -352,4 +358,164 @@ export async function getContactByHubspotId(
 
   const docSnap = snapshot.docs[0];
   return { id: docSnap.id, ...docSnap.data() } as Contact;
+}
+
+export async function getWallets(userId: string): Promise<Wallet[]> {
+  if (!db) return [];
+
+  const snapshot = await getDocs(
+    query(collection(db, "wallets"), where("userId", "==", userId)),
+  );
+
+  return snapshot.docs
+    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as Wallet)
+    .sort((a, b) => (a.createdAt ?? "").localeCompare(b.createdAt ?? ""));
+}
+
+export async function addWallet(
+  wallet: Omit<Wallet, "id" | "createdAt">,
+): Promise<Wallet> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const now = new Date().toISOString();
+  const docRef = await addDoc(collection(db, "wallets"), {
+    ...wallet,
+    createdAt: now,
+  });
+
+  return {
+    id: docRef.id,
+    ...wallet,
+    createdAt: now,
+  };
+}
+
+export async function updateWallet(
+  id: string,
+  data: Partial<Wallet>,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const { id: _id, createdAt, ...updates } = data;
+
+  await updateDoc(doc(db, "wallets", id), updates);
+}
+
+export async function deleteWallet(id: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "wallets", id));
+}
+
+export async function getTransactions(
+  userId: string,
+  filters?: TransactionFilters,
+): Promise<Transaction[]> {
+  if (!db) return [];
+
+  const snapshot = await getDocs(
+    query(collection(db, "transactions"), where("userId", "==", userId)),
+  );
+
+  const transactions = snapshot.docs
+    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as Transaction)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return filters ? filterTransactions(transactions, filters) : transactions;
+}
+
+export async function addTransaction(
+  transaction: Omit<Transaction, "id" | "createdAt">,
+): Promise<Transaction> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const now = new Date().toISOString();
+  const docRef = await addDoc(collection(db, "transactions"), {
+    ...transaction,
+    createdAt: now,
+  });
+
+  return {
+    id: docRef.id,
+    ...transaction,
+    createdAt: now,
+  };
+}
+
+export async function addTransactionsBatch(
+  transactions: Omit<Transaction, "id" | "createdAt">[],
+): Promise<Transaction[]> {
+  if (!db) throw new Error("Firestore is not configured.");
+  if (transactions.length === 0) return [];
+
+  const firestore = db;
+  const batch = writeBatch(firestore);
+  const now = new Date().toISOString();
+  const created: Transaction[] = [];
+
+  transactions.forEach((transaction) => {
+    const docRef = doc(collection(firestore, "transactions"));
+    batch.set(docRef, { ...transaction, createdAt: now });
+    created.push({
+      id: docRef.id,
+      ...transaction,
+      createdAt: now,
+    });
+  });
+
+  await batch.commit();
+  return created;
+}
+
+export async function deleteTransaction(id: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "transactions", id));
+}
+
+export async function getFixedDeposits(userId: string): Promise<FixedDeposit[]> {
+  if (!db) return [];
+
+  const snapshot = await getDocs(
+    query(collection(db, "fixedDeposits"), where("userId", "==", userId)),
+  );
+
+  return snapshot.docs
+    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as FixedDeposit)
+    .sort((a, b) => (a.maturityDate ?? "").localeCompare(b.maturityDate ?? ""));
+}
+
+export async function addFixedDeposit(
+  fd: Omit<FixedDeposit, "id" | "createdAt">,
+): Promise<FixedDeposit> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const now = new Date().toISOString();
+  const docRef = await addDoc(collection(db, "fixedDeposits"), {
+    ...fd,
+    createdAt: now,
+  });
+
+  return {
+    id: docRef.id,
+    ...fd,
+    createdAt: now,
+  };
+}
+
+export async function updateFixedDeposit(
+  id: string,
+  data: Partial<FixedDeposit>,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const { id: _id, createdAt, ...updates } = data;
+
+  await updateDoc(doc(db, "fixedDeposits", id), updates);
+}
+
+export async function deleteFixedDeposit(id: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "fixedDeposits", id));
 }

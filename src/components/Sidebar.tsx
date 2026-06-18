@@ -10,6 +10,7 @@ import {
   LogOut,
   Settings,
   Users,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -83,6 +84,14 @@ export default function Sidebar() {
         >
           <LayoutDashboard className="size-[18px] shrink-0" />
           Dashboard
+        </Link>
+
+        <Link
+          href="/finance"
+          className={navLinkClass(isActivePath(pathname, "/finance"))}
+        >
+          <Wallet className="size-[18px] shrink-0" />
+          Finance
         </Link>
 
         <NavGroup

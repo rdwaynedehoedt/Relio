@@ -326,11 +326,11 @@ export default function CompaniesPage() {
       <div className="min-h-screen bg-background">
         <Sidebar />
 
-        <main className="pl-72">
-          <div className="flex h-screen">
+        <main className="h-screen overflow-hidden pl-72">
+          <div className="flex h-full min-h-0 overflow-hidden">
             <section
               className={cn(
-                "flex min-w-0 flex-col bg-background transition-all duration-300 ease-out",
+                "flex h-full min-h-0 flex-col bg-background transition-all duration-300 ease-out",
                 selectedCompany ? "w-[58%] border-r border-border/50" : "w-full",
               )}
               onClick={handleLeftPanelClick}
@@ -350,7 +350,7 @@ export default function CompaniesPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 px-5 py-2">
+              <div className="flex items-center gap-1.5 px-6 py-2">
                 <div className="relative max-w-sm flex-1">
                   <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
                   <Input
@@ -376,7 +376,7 @@ export default function CompaniesPage() {
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 px-5 pb-2">
+              <div className="flex flex-wrap items-center gap-1.5 px-6 pb-2">
                 <FilterPill
                   label="Industry"
                   value={industryFilter}
@@ -395,7 +395,7 @@ export default function CompaniesPage() {
 
               {checkedIds.size > 0 ? (
                 <div
-                  className="flex items-center justify-between border-y border-border/40 bg-muted/20 px-5 py-2"
+                  className="flex items-center justify-between border-y border-border/40 bg-muted/20 px-6 py-2"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <span className="text-xs text-muted-foreground">
@@ -465,7 +465,7 @@ export default function CompaniesPage() {
                   <table className="w-full min-w-[860px] text-[13px]">
                     <thead className="sticky top-0 z-10 bg-background/90 backdrop-blur-md">
                       <tr className="border-b border-border/40 text-left">
-                        <th className="w-9 px-5 py-2">
+                        <th className="w-9 px-6 py-2">
                           <input
                             type="checkbox"
                             className="size-3.5 rounded border-border/60 accent-foreground"
@@ -480,16 +480,16 @@ export default function CompaniesPage() {
                             aria-label="Select all companies"
                           />
                         </th>
-                        <th className="min-w-[220px] px-5 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+                        <th className="min-w-[220px] px-6 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
                           Company
                         </th>
-                        <th className="min-w-[160px] px-5 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+                        <th className="min-w-[160px] px-6 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
                           Location
                         </th>
-                        <th className="min-w-[100px] px-5 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+                        <th className="min-w-[100px] px-6 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
                           Contacts
                         </th>
-                        <th className="min-w-[200px] px-5 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+                        <th className="min-w-[200px] px-6 py-2 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
                           Tags
                         </th>
                       </tr>
@@ -521,7 +521,7 @@ export default function CompaniesPage() {
                             )}
                           >
                             <td
-                              className="px-5 py-2"
+                              className="px-6 py-2"
                               onClick={(event) => event.stopPropagation()}
                             >
                               <input
@@ -537,7 +537,7 @@ export default function CompaniesPage() {
                                 aria-label={`Select ${company.name}`}
                               />
                             </td>
-                            <td className="px-5 py-2">
+                            <td className="px-6 py-2">
                               <div className="flex items-center gap-2.5">
                                 <CompanyLogo
                                   name={company.name}
@@ -554,15 +554,15 @@ export default function CompaniesPage() {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-5 py-2 text-muted-foreground">
+                            <td className="px-6 py-2 text-muted-foreground">
                               {location || (
                                 <span className="text-muted-foreground/50">—</span>
                               )}
                             </td>
-                            <td className="px-5 py-2 text-muted-foreground">
+                            <td className="px-6 py-2 text-muted-foreground">
                               {contactCount}
                             </td>
-                            <td className="px-5 py-2">
+                            <td className="px-6 py-2">
                               <div className="flex flex-wrap gap-1">
                                 {company.tags?.length ? (
                                   company.tags.map((tag) => (
@@ -586,7 +586,7 @@ export default function CompaniesPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between border-t border-border/40 px-5 py-2.5 text-xs text-muted-foreground">
+              <div className="flex shrink-0 items-center justify-between border-t border-border/40 px-6 py-2.5 text-xs text-muted-foreground">
                 <span>{filteredCompanies.length} companies</span>
               </div>
             </section>
