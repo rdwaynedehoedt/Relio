@@ -25,6 +25,7 @@ import {
   getMagicLinkCallbackUrl,
   storeEmailForSignIn,
 } from "@/lib/auth-utils";
+import { clearAuthCookie, setAuthCookie } from "@/lib/auth-cookie";
 import { deleteAllUserData, saveGoogleIntegration } from "@/lib/firestore";
 
 export const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
@@ -55,6 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      if (user) {
+        setAuthCookie();
+      } else {
+        clearAuthCookie();
+      }
     });
 
     return unsubscribe;

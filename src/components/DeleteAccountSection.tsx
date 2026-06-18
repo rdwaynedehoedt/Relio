@@ -59,7 +59,7 @@ export default function DeleteAccountSection() {
     try {
       await deleteAccount();
       TOUR_PAGES.forEach((page) => clearTourStep(page));
-      router.replace("/");
+      router.replace("/auth");
     } catch (err) {
       setError(
         err instanceof Error

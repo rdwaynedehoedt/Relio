@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isSignInWithEmailLink } from "firebase/auth";
 import { Loader2 } from "lucide-react";
+import { motion } from "motion/react";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 import {
@@ -15,6 +17,8 @@ import {
   setMagicLinkSessionState,
 } from "@/lib/auth-utils";
 import { cn } from "@/lib/utils";
+
+const easeOut = [0.16, 1, 0.3, 1] as const;
 
 type CallbackState = "loading" | "needs-email" | "signing-in" | "error";
 
@@ -122,12 +126,17 @@ export default function AuthCallbackPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-6 dark:bg-[#0a0a0a]">
-      <div className="login-fade-up w-full max-w-[340px] text-center">
+    <AuthShell>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: easeOut }}
+        className="w-full max-w-[400px] text-center"
+      >
         {(state === "loading" || state === "signing-in") && (
           <>
-            <Loader2 className="mx-auto size-5 animate-spin text-[#0a0a0a]/40 dark:text-white/40" />
-            <p className="mt-4 text-sm text-[#0a0a0a]/50 dark:text-white/50">
+            <Loader2 className="mx-auto size-5 animate-spin text-neutral-400" />
+            <p className="mt-4 text-sm text-neutral-500">
               {state === "signing-in"
                 ? "Signing you in..."
                 : "Verifying your link..."}
@@ -137,13 +146,11 @@ export default function AuthCallbackPage() {
 
         {state === "needs-email" && (
           <>
-            <p className="text-5xl leading-none text-[#0a0a0a] dark:text-white">
-              &#9993;
-            </p>
-            <h1 className="mt-6 text-lg font-semibold tracking-tight text-[#0a0a0a] dark:text-white">
+            <span className="text-4xl leading-none">✉️</span>
+            <h1 className="mt-6 text-3xl font-light tracking-tight text-[#0a0a0a]">
               Confirm your email
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-[#0a0a0a]/50 dark:text-white/50">
+            <p className="mt-3 text-sm leading-relaxed text-neutral-500">
               Enter the email you used to request the sign-in link.
             </p>
 
@@ -160,20 +167,13 @@ export default function AuthCallbackPage() {
                 autoFocus
                 autoComplete="email"
                 className={cn(
-                  "h-11 w-full rounded-lg border bg-transparent px-3.5 text-sm outline-none",
-                  "border-[#0a0a0a]/15 text-[#0a0a0a] placeholder:text-[#0a0a0a]/30",
-                  "focus:border-[#0a0a0a]/35",
-                  "dark:border-white/15 dark:text-white dark:placeholder:text-white/30",
-                  "dark:focus:border-white/35",
+                  "h-11 w-full rounded-full border border-neutral-200 bg-white px-4 text-sm text-[#0a0a0a] outline-none transition-colors",
+                  "placeholder:text-neutral-400 focus:border-neutral-400",
                 )}
               />
               <button
                 type="submit"
-                className={cn(
-                  "flex h-11 w-full items-center justify-center rounded-lg text-sm font-medium",
-                  "bg-[#0a0a0a] text-white hover:opacity-85",
-                  "dark:bg-white dark:text-[#0a0a0a] dark:hover:opacity-90",
-                )}
+                className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#0a0a0a] text-sm font-medium text-white transition-opacity hover:opacity-90"
               >
                 Complete sign in
               </button>
@@ -183,26 +183,22 @@ export default function AuthCallbackPage() {
 
         {state === "error" && (
           <>
-            <h1 className="text-lg font-semibold tracking-tight text-[#0a0a0a] dark:text-white">
+            <h1 className="text-3xl font-light tracking-tight text-[#0a0a0a]">
               Sign-in failed
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-[#0a0a0a]/50 dark:text-white/50">
+            <p className="mt-3 text-sm leading-relaxed text-neutral-500">
               {error ?? "Something went wrong."}
             </p>
             <button
               type="button"
-              onClick={() => router.replace("/")}
-              className={cn(
-                "mt-8 inline-flex h-11 items-center justify-center rounded-lg border px-6 text-sm font-medium",
-                "border-[#0a0a0a]/15 text-[#0a0a0a] hover:bg-[#0a0a0a]/[0.03]",
-                "dark:border-white/15 dark:text-white dark:hover:bg-white/[0.04]",
-              )}
+              onClick={() => router.replace("/auth")}
+              className="mt-8 inline-flex h-11 items-center justify-center rounded-full border border-neutral-200 px-6 text-sm font-medium text-[#0a0a0a] transition-colors hover:bg-neutral-50"
             >
-              Back to login
+              Back to sign in
             </button>
           </>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </AuthShell>
   );
 }
