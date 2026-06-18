@@ -325,15 +325,15 @@ export default function AdminPage() {
                   </p>
                   <p className="mt-2 text-sm text-muted-foreground">{error}</p>
                   <p className="mt-3 text-xs text-muted-foreground">
-                    Add{" "}
+                    Vercel / local: set{" "}
                     <code className="rounded bg-muted px-1 py-0.5">
-                      FIREBASE_SERVICE_ACCOUNT_JSON
+                      FIREBASE_SERVICE_ACCOUNT_JSON_BASE64
                     </code>{" "}
-                    or{" "}
+                    in environment variables. Run{" "}
                     <code className="rounded bg-muted px-1 py-0.5">
-                      GOOGLE_APPLICATION_CREDENTIALS
+                      npm run encode-firebase-admin-env
                     </code>{" "}
-                    to <code className="rounded bg-muted px-1 py-0.5">.env.local</code>
+                    to generate the value.
                   </p>
                 </div>
               ) : data ? (
