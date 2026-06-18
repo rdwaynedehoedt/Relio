@@ -38,13 +38,17 @@ import {
   type ExchangeRates,
   fetchExchangeRates,
   filterTransactions,
+  FINANCE_PERIOD_PRESETS,
   formatCurrencyAmount,
   formatLkr,
   formatMoney,
+  getActiveFinancePeriodPreset,
   getCategorySpendingData,
   getCurrentMonthKey,
   getDailySpendingData,
   getFdProgress,
+  getFinancePeriodLabel,
+  getFinancePeriodStatSuffix,
   getMonthlyStats,
   getMonthLabel,
   getNetWorthSummary,
@@ -167,6 +171,21 @@ export default function FinancePage() {
   const filteredTransactions = useMemo(
     () => filterTransactions(transactions, filters),
     [transactions, filters],
+  );
+
+  const activePeriod = useMemo(
+    () => getActiveFinancePeriodPreset(filters.month),
+    [filters.month],
+  );
+
+  const periodLabel = useMemo(
+    () => getFinancePeriodLabel(filters.month),
+    [filters.month],
+  );
+
+  const periodStatSuffix = useMemo(
+    () => getFinancePeriodStatSuffix(filters.month),
+    [filters.month],
   );
 
   const monthlyStats = useMemo(
@@ -451,27 +470,82 @@ export default function FinancePage() {
               </div>
             </section>
 
-            <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">Overview</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {periodLabel}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {FINANCE_PERIOD_PRESETS.map((preset) => (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() =>
+                      setFilters((current) => ({
+                        ...current,
+                        month: preset.month(),
+                      }))
+                    }
+                    className={cn(
+                      "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                      activePeriod === preset.value
+                        ? "bg-foreground text-background"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+                {monthOptions.length > 0 ? (
+                  <select
+                    value={activePeriod === "custom" ? (filters.month ?? "") : ""}
+                    onChange={(event) =>
+                      setFilters((current) => ({
+                        ...current,
+                        month: event.target.value || getCurrentMonthKey(),
+                      }))
+                    }
+                    className={cn(
+                      "h-8 rounded-full border border-border/60 bg-background px-3 text-xs text-foreground outline-none",
+                      activePeriod === "custom" && "border-foreground/30",
+                    )}
+                  >
+                    <option value="" disabled>
+                      Other month
+                    </option>
+                    {monthOptions.map((month) => (
+                      <option key={month} value={month}>
+                        {getMonthLabel(month)}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
-                label="Spent this month"
+                label={`Spent ${periodStatSuffix}`}
                 value={formatLkr(monthlyStats.totalSpentLkr)}
                 icon={TrendingDown}
                 tone="expense"
               />
               <StatCard
-                label="Income this month"
+                label={`Income ${periodStatSuffix}`}
                 value={formatLkr(monthlyStats.totalIncomeLkr)}
                 icon={TrendingUp}
                 tone="income"
               />
               <StatCard
-                label="Net this month"
+                label={`Net ${periodStatSuffix}`}
                 value={formatLkr(monthlyStats.netLkr)}
                 icon={monthlyStats.netLkr >= 0 ? ArrowUpRight : ArrowDownLeft}
                 tone={monthlyStats.netLkr >= 0 ? "income" : "expense"}
               />
               <StatCard
-                label="Biggest spend"
+                label={`Biggest spend ${periodStatSuffix}`}
                 value={monthlyStats.biggestSpendCategory ?? "—"}
                 icon={Wallet}
                 tone="neutral"
@@ -480,7 +554,11 @@ export default function FinancePage() {
             </section>
 
             <section className="mt-6">
-              <FinanceCharts categoryData={categoryData} dailyData={dailyData} />
+              <FinanceCharts
+                categoryData={categoryData}
+                dailyData={dailyData}
+                periodLabel={periodLabel}
+              />
             </section>
 
             <section className="mt-8">
@@ -640,7 +718,7 @@ export default function FinancePage() {
                     Transactions
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Filter by wallet, category, or month
+                    {periodLabel} · filter by wallet or category
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -697,24 +775,6 @@ export default function FinancePage() {
                   {TRANSACTION_CATEGORIES.map((category) => (
                     <option key={category} value={category}>
                       {category}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={filters.month ?? ""}
-                  onChange={(event) =>
-                    setFilters((current) => ({
-                      ...current,
-                      month: event.target.value || undefined,
-                    }))
-                  }
-                  className="h-9 rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground outline-none"
-                >
-                  <option value="">All months</option>
-                  {monthOptions.map((month) => (
-                    <option key={month} value={month}>
-                      {getMonthLabel(month)}
                     </option>
                   ))}
                 </select>

@@ -7,6 +7,7 @@ import {
   parseISO,
   startOfMonth,
   startOfWeek,
+  subMonths,
 } from "date-fns";
 import {
   Briefcase,
@@ -288,6 +289,41 @@ export function getCurrentMonthKey(): string {
   return format(new Date(), "yyyy-MM");
 }
 
+export function getLastMonthKey(): string {
+  return format(subMonths(new Date(), 1), "yyyy-MM");
+}
+
+export const FINANCE_PERIOD_PRESETS = [
+  { value: "this-month", label: "This month", month: () => getCurrentMonthKey() },
+  { value: "last-month", label: "Last month", month: () => getLastMonthKey() },
+  { value: "all-time", label: "All time", month: () => undefined },
+] as const;
+
+export type FinancePeriodPreset = (typeof FINANCE_PERIOD_PRESETS)[number]["value"];
+
+export function getActiveFinancePeriodPreset(
+  month?: string,
+): FinancePeriodPreset | "custom" {
+  if (!month) return "all-time";
+  if (month === getCurrentMonthKey()) return "this-month";
+  if (month === getLastMonthKey()) return "last-month";
+  return "custom";
+}
+
+export function getFinancePeriodLabel(month?: string): string {
+  if (!month) return "All time";
+  if (month === getCurrentMonthKey()) return "This month";
+  if (month === getLastMonthKey()) return "Last month";
+  return getMonthLabel(month);
+}
+
+export function getFinancePeriodStatSuffix(month?: string): string {
+  if (!month) return "all time";
+  if (month === getCurrentMonthKey()) return "this month";
+  if (month === getLastMonthKey()) return "last month";
+  return `in ${getMonthLabel(month)}`;
+}
+
 export function getWalletMap(wallets: Wallet[]): Map<string, Wallet> {
   return new Map(
     wallets
@@ -307,10 +343,12 @@ export function getMonthlyStats(
   transactions: Transaction[],
   wallets: Wallet[],
   rates: ExchangeRates,
-  month = getCurrentMonthKey(),
+  month?: string,
 ): MonthlyStats {
   const walletMap = getWalletMap(wallets);
-  const monthTransactions = filterTransactions(transactions, { month });
+  const monthTransactions = month
+    ? filterTransactions(transactions, { month })
+    : transactions;
 
   let totalSpentLkr = 0;
   let totalIncomeLkr = 0;
@@ -377,10 +415,13 @@ export function getCategorySpendingData(
   transactions: Transaction[],
   wallets: Wallet[],
   rates: ExchangeRates,
-  month = getCurrentMonthKey(),
+  month?: string,
 ): CategoryChartDatum[] {
   const walletMap = getWalletMap(wallets);
-  const monthTransactions = filterTransactions(transactions, { month }).filter(
+  const scoped = month
+    ? filterTransactions(transactions, { month })
+    : transactions;
+  const monthTransactions = scoped.filter(
     (transaction) => transaction.type === "expense",
   );
 

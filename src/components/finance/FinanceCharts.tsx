@@ -20,11 +20,13 @@ import { formatLkr } from "@/lib/finance-utils";
 interface FinanceChartsProps {
   categoryData: CategoryChartDatum[];
   dailyData: DailySpendingDatum[];
+  periodLabel?: string;
 }
 
 export default function FinanceCharts({
   categoryData,
   dailyData,
+  periodLabel = "This month",
 }: FinanceChartsProps) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -32,7 +34,7 @@ export default function FinanceCharts({
         <h3 className="text-sm font-semibold text-foreground">
           Spending by category
         </h3>
-        <p className="mt-1 text-xs text-muted-foreground">This month</p>
+        <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
 
         {categoryData.length > 0 ? (
           <div className="mt-4 h-64">
@@ -63,7 +65,7 @@ export default function FinanceCharts({
           </div>
         ) : (
           <div className="mt-4 flex h-64 items-center justify-center rounded-xl bg-muted/30 text-sm text-muted-foreground">
-            No spending data this month
+            No spending data for {periodLabel.toLowerCase()}
           </div>
         )}
 

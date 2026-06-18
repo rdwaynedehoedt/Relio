@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "copy-user-data": "node scripts/copy-user-data.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -38,6 +39,7 @@
     "vcf": "^2.1.2"
   },
   "devDependencies": {
+    "firebase-admin": "^13.4.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
