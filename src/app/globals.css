@@ -14,8 +14,32 @@ body {
 
 .tour-target-active {
   position: relative;
-  z-index: 90 !important;
+  z-index: 91 !important;
   pointer-events: auto !important;
+  isolation: isolate;
+}
+
+/* Counter-scale tour layer so spotlight coords match getBoundingClientRect with html zoom */
+.tour-overlay-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 85;
+  pointer-events: none;
+  transform-origin: top left;
+  zoom: calc(1 / var(--ui-scale));
+  width: calc(100vw * var(--ui-scale));
+  height: calc(100dvh * var(--ui-scale));
+  overflow: hidden;
+}
+
+@supports not (zoom: 1) {
+  .tour-overlay-root {
+    zoom: normal;
+    transform: scale(calc(1 / var(--ui-scale)));
+    width: calc(100vw * var(--ui-scale));
+    height: calc(100dvh * var(--ui-scale));
+  }
 }
 
 .tour-fade-in {

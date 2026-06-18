@@ -35,6 +35,28 @@ function tourStepKey(page: OnboardingPage) {
   return `relio-tour-step-${page}`;
 }
 
+export function getUiScale(): number {
+  if (typeof window === "undefined") return 1;
+
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue("--ui-scale")
+    .trim();
+  const parsed = Number.parseFloat(raw);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+export function getViewportSize() {
+  const vv = window.visualViewport;
+
+  return {
+    width: vv?.width ?? window.innerWidth,
+    height: vv?.height ?? window.innerHeight,
+    offsetTop: vv?.offsetTop ?? 0,
+    offsetLeft: vv?.offsetLeft ?? 0,
+  };
+}
+
 export function getSavedTourStep(page: OnboardingPage): number {
   if (typeof window === "undefined") return 0;
   const saved = sessionStorage.getItem(tourStepKey(page));
@@ -72,6 +94,10 @@ export function getSpotlightRect(element: HTMLElement | null): SpotlightRect | n
 
   const rect = element.getBoundingClientRect();
 
+  if (rect.width <= 0 || rect.height <= 0) {
+    return null;
+  }
+
   return {
     x: rect.left - SPOTLIGHT_PADDING,
     y: rect.top - SPOTLIGHT_PADDING,
@@ -82,12 +108,40 @@ export function getSpotlightRect(element: HTMLElement | null): SpotlightRect | n
   };
 }
 
-export function getOverlayPanels(spotlight: SpotlightRect | null): OverlayPanel[] {
-  if (!spotlight) return [];
+function clampSpotlightToViewport(spotlight: SpotlightRect): SpotlightRect {
+  const { width: viewportW, height: viewportH } = getViewportSize();
 
-  const viewportW = window.innerWidth;
-  const viewportH = window.innerHeight;
-  const { x, y, width, height } = spotlight;
+  const x = Math.max(0, Math.min(spotlight.x, viewportW));
+  const y = Math.max(0, Math.min(spotlight.y, viewportH));
+  const right = Math.min(spotlight.x + spotlight.width, viewportW);
+  const bottom = Math.min(spotlight.y + spotlight.height, viewportH);
+
+  const width = Math.max(0, right - x);
+  const height = Math.max(0, bottom - y);
+
+  return {
+    x,
+    y,
+    width,
+    height,
+    centerX: x + width / 2,
+    centerY: y + height / 2,
+  };
+}
+
+export function getOverlayPanels(spotlight: SpotlightRect | null): OverlayPanel[] {
+  const { width: viewportW, height: viewportH } = getViewportSize();
+
+  if (!spotlight) {
+    return [{ top: 0, left: 0, width: viewportW, height: viewportH }];
+  }
+
+  const hole = clampSpotlightToViewport(spotlight);
+  const { x, y, width, height } = hole;
+
+  if (width <= 0 || height <= 0) {
+    return [{ top: 0, left: 0, width: viewportW, height: viewportH }];
+  }
 
   return [
     { top: 0, left: 0, width: viewportW, height: Math.max(0, y) },
@@ -112,22 +166,23 @@ export function getPopoverPosition(
   popoverHeight: number,
 ): PopoverPosition {
   if (!spotlight) {
+    const { width: viewportW, height: viewportH } = getViewportSize();
+
     return {
       top: Math.max(
         VIEWPORT_PADDING,
-        window.innerHeight / 2 - popoverHeight / 2,
+        viewportH / 2 - popoverHeight / 2,
       ),
       left: Math.max(
         VIEWPORT_PADDING,
-        (window.innerWidth - POPOVER_WIDTH) / 2,
+        (viewportW - POPOVER_WIDTH) / 2,
       ),
       placement: "center",
       arrowOffset: POPOVER_WIDTH / 2,
     };
   }
 
-  const viewportW = window.innerWidth;
-  const viewportH = window.innerHeight;
+  const { width: viewportW, height: viewportH } = getViewportSize();
   const preferLeft = spotlight.centerX > viewportW / 2;
 
   const spaceBelow =
@@ -193,4 +248,12 @@ export function getPopoverPosition(
   }
 
   return { top, left, placement, arrowOffset };
+}
+
+export function scheduleTourMeasure(callback: () => void) {
+  if (typeof window === "undefined") return;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(callback);
+  });
 }

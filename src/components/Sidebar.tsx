@@ -96,6 +96,37 @@ function SidebarNavLink({
   );
 }
 
+function SidebarNavButton({
+  label,
+  icon: Icon,
+  collapsed,
+  onClick,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  collapsed: boolean;
+  onClick: () => void;
+}) {
+  const button = (
+    <button
+      type="button"
+      onClick={onClick}
+      className={navLinkClass(false, collapsed)}
+    >
+      <Icon className="size-[18px] shrink-0" />
+      {!collapsed ? <span className="truncate">{label}</span> : null}
+    </button>
+  );
+
+  if (!collapsed) return button;
+
+  return (
+    <Tooltip content={label} side="right" className="flex w-full justify-center">
+      {button}
+    </Tooltip>
+  );
+}
+
 function SidebarShell() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
@@ -238,6 +269,12 @@ function SidebarShell() {
             isActive={isActivePath(pathname, "/settings")}
             collapsed={isCollapsed}
             onNavigate={handleNavigate}
+          />
+          <SidebarNavButton
+            label="Sign out"
+            icon={LogOut}
+            collapsed={isCollapsed}
+            onClick={() => void signOut()}
           />
         </div>
 
