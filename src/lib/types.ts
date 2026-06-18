@@ -174,6 +174,23 @@ export interface UserPreferences {
   birthYear?: number;
 }
 
+export type OnboardingPage =
+  | "contacts"
+  | "companies"
+  | "finance"
+  | "brain"
+  | "lifemap";
+
+export interface OnboardingState {
+  completed: boolean;
+  welcomeDone: boolean;
+  checklistDismissed?: boolean;
+  name?: string;
+  heardFrom?: string;
+  useCase?: string[];
+  pagesCompleted: Record<OnboardingPage, boolean>;
+}
+
 export type GoalCategory =
   | "home"
   | "travel"

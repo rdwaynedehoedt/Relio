@@ -19,12 +19,14 @@ import {
 import Masonry from "react-masonry-css";
 import AuthGuard from "@/components/AuthGuard";
 import NoteDrawer from "@/components/NoteDrawer";
+import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
 import Sidebar from "@/components/Sidebar";
 import SidebarInset from "@/components/SidebarInset";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarProvider } from "@/hooks/useSidebar";
 import { useAuth } from "@/context/AuthContext";
+import { useOnboarding } from "@/context/OnboardingContext";
 import {
   filterNotes,
   getFaviconUrl,
@@ -69,6 +71,7 @@ const MASONRY_BREAKPOINTS = {
 
 export default function BrainPage() {
   const { user } = useAuth();
+  const { state: onboardingState, markPageDone } = useOnboarding();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -77,6 +80,18 @@ export default function BrainPage() {
   const [drawerMode, setDrawerMode] = useState<"add" | "edit">("add");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  const showBrainOnboarding =
+    !loading &&
+    notes.length === 0 &&
+    onboardingState &&
+    !onboardingState.pagesCompleted.brain;
+
+  useEffect(() => {
+    if (notes.length > 0 && onboardingState && !onboardingState.pagesCompleted.brain) {
+      void markPageDone("brain");
+    }
+  }, [notes.length, markPageDone, onboardingState]);
 
   const reloadNotes = useCallback(async () => {
     if (!user) return;
@@ -172,6 +187,7 @@ export default function BrainPage() {
 
     const saved = await addNote(payload);
     setNotes((current) => sortNotes([saved, ...current]));
+    void markPageDone("brain");
   }
 
   async function handleDelete(id: string) {
@@ -203,11 +219,19 @@ export default function BrainPage() {
                     Ideas, articles, meetings, and decisions in one place
                   </p>
                 </div>
-                <Button onClick={openAddDrawer}>
+                <Button id="onboarding-new-note-btn" onClick={openAddDrawer}>
                   <Plus className="size-4" />
                   New Note
                 </Button>
               </div>
+
+              {showBrainOnboarding ? (
+                <OnboardingBanner
+                  page="brain"
+                  visible={showBrainOnboarding}
+                  onSkip={() => void markPageDone("brain")}
+                />
+              ) : null}
 
               <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="relative max-w-md flex-1">

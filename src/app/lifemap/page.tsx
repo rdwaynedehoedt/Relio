@@ -14,6 +14,7 @@ import {
 import AuthGuard from "@/components/AuthGuard";
 import GoalDrawer from "@/components/GoalDrawer";
 import LifeEventDrawer from "@/components/LifeEventDrawer";
+import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
 import BoardView from "@/components/lifemap/BoardView";
 import GoalDetailDialog from "@/components/lifemap/GoalDetailDialog";
 import GoalsGrid from "@/components/lifemap/GoalsGrid";
@@ -25,6 +26,7 @@ import SidebarInset from "@/components/SidebarInset";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider } from "@/hooks/useSidebar";
 import { useAuth } from "@/context/AuthContext";
+import { useOnboarding } from "@/context/OnboardingContext";
 import {
   fetchExchangeRates,
   formatLkr,
@@ -67,6 +69,7 @@ type LifeMapView = "timeline" | "board";
 
 export default function LifeMapPage() {
   const { user } = useAuth();
+  const { state: onboardingState, markPageDone } = useOnboarding();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>([]);
   const [wallets, setWallets] = useState<Awaited<ReturnType<typeof getWallets>>>([]);
@@ -91,6 +94,18 @@ export default function LifeMapPage() {
   const [detailEvent, setDetailEvent] = useState<LifeEvent | null>(null);
   const [goalDetailOpen, setGoalDetailOpen] = useState(false);
   const [detailGoal, setDetailGoal] = useState<Goal | null>(null);
+
+  const showLifemapOnboarding =
+    !loading &&
+    goals.length === 0 &&
+    onboardingState &&
+    !onboardingState.pagesCompleted.lifemap;
+
+  useEffect(() => {
+    if (goals.length > 0 && onboardingState && !onboardingState.pagesCompleted.lifemap) {
+      void markPageDone("lifemap");
+    }
+  }, [goals.length, markPageDone, onboardingState]);
 
   const reloadData = useCallback(async () => {
     if (!user) return;
@@ -251,6 +266,7 @@ export default function LifeMapPage() {
 
     const saved = await addGoal(payload);
     setGoals((current) => [saved, ...current]);
+    void markPageDone("lifemap");
   }
 
   async function handleDeleteGoal(id: string) {
@@ -357,12 +373,20 @@ export default function LifeMapPage() {
                     <Sparkles className="size-4" />
                     Add Life Event
                   </Button>
-                  <Button onClick={openAddGoalDrawer}>
+                  <Button id="onboarding-new-goal-btn" onClick={openAddGoalDrawer}>
                     <Plus className="size-4" />
                     New Goal
                   </Button>
                 </div>
               </div>
+
+              {showLifemapOnboarding ? (
+                <OnboardingBanner
+                  page="lifemap"
+                  visible={showLifemapOnboarding}
+                  onSkip={() => void markPageDone("lifemap")}
+                />
+              ) : null}
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <StatChip

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { AuthProvider } from "@/context/AuthContext";
-import { PreferencesProvider } from "@/context/PreferencesContext";
+import { AppProviders } from "@/components/AppProviders";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -57,9 +56,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-background font-sans text-foreground">
-        <AuthProvider>
-          <PreferencesProvider>{children}</PreferencesProvider>
-        </AuthProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

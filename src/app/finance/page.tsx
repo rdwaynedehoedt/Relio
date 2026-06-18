@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import CsvImportDialog from "@/components/finance/CsvImportDialog";
+import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
 import FixedDepositDrawer, {
   type FixedDepositFormValues,
 } from "@/components/finance/FixedDepositDrawer";
@@ -26,6 +27,7 @@ import SidebarInset from "@/components/SidebarInset";
 import { SidebarProvider } from "@/hooks/useSidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useOnboarding } from "@/context/OnboardingContext";
 import {
   CATEGORY_ICONS,
   convertCurrencyToLkr,
@@ -79,6 +81,7 @@ const DEFAULT_RATES: ExchangeRates = {
 
 export default function FinancePage() {
   const { user } = useAuth();
+  const { state: onboardingState, markPageDone } = useOnboarding();
   const [wallets, setWallets] = useState<WalletType[]>([]);
   const [fixedDeposits, setFixedDeposits] = useState<FixedDeposit[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -93,6 +96,18 @@ export default function FinancePage() {
   const [filters, setFilters] = useState<TransactionFilters>({
     month: getCurrentMonthKey(),
   });
+
+  const showFinanceOnboarding =
+    !loading &&
+    wallets.length === 0 &&
+    onboardingState &&
+    !onboardingState.pagesCompleted.finance;
+
+  useEffect(() => {
+    if (wallets.length > 0 && onboardingState && !onboardingState.pagesCompleted.finance) {
+      void markPageDone("finance");
+    }
+  }, [wallets.length, markPageDone, onboardingState]);
 
   const loadRates = useCallback(async () => {
     setRatesLoading(true);
@@ -185,6 +200,7 @@ export default function FinancePage() {
     });
 
     setWallets((current) => [...current, wallet]);
+    void markPageDone("finance");
   }
 
   async function handleCreateFixedDeposit(data: FixedDepositFormValues) {
@@ -332,6 +348,14 @@ export default function FinancePage() {
               </div>
             </div>
 
+            {showFinanceOnboarding ? (
+              <OnboardingBanner
+                page="finance"
+                visible={showFinanceOnboarding}
+                onSkip={() => void markPageDone("finance")}
+              />
+            ) : null}
+
             <section className="mt-6 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-4">
@@ -468,7 +492,11 @@ export default function FinancePage() {
                     Balances with live LKR conversion
                   </p>
                 </div>
-                <Button size="sm" onClick={() => setWalletDrawerOpen(true)}>
+                <Button
+                  id="onboarding-add-wallet-btn"
+                  size="sm"
+                  onClick={() => setWalletDrawerOpen(true)}
+                >
                   <Plus className="size-4" />
                   Add wallet
                 </Button>

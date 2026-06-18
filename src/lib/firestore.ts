@@ -25,12 +25,15 @@ import type {
   Note,
   Goal,
   LifeEvent,
+  OnboardingPage,
+  OnboardingState,
   Transaction,
   TransactionFilters,
   UserPreferences,
   Wallet,
 } from "@/lib/types";
 import { filterTransactions } from "@/lib/finance-utils";
+import { DEFAULT_ONBOARDING_STATE } from "@/lib/onboarding-utils";
 
 function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(
@@ -470,6 +473,55 @@ export async function getUserPreferences(
   if (!snapshot.exists()) return null;
 
   return snapshot.data() as UserPreferences;
+}
+
+function onboardingDoc(userId: string) {
+  return doc(db!, "users", userId, "onboarding", "state");
+}
+
+export async function getOnboardingState(
+  userId: string,
+): Promise<OnboardingState | null> {
+  if (!db) return null;
+
+  const snapshot = await getDoc(onboardingDoc(userId));
+
+  if (!snapshot.exists()) return null;
+
+  const data = snapshot.data() as Partial<OnboardingState>;
+
+  return {
+    ...DEFAULT_ONBOARDING_STATE,
+    ...data,
+    pagesCompleted: {
+      ...DEFAULT_ONBOARDING_STATE.pagesCompleted,
+      ...data.pagesCompleted,
+    },
+  };
+}
+
+export async function updateOnboardingState(
+  userId: string,
+  data: Partial<OnboardingState>,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await setDoc(onboardingDoc(userId), omitUndefined(data), { merge: true });
+}
+
+export async function markPageComplete(
+  userId: string,
+  page: OnboardingPage,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await setDoc(
+    onboardingDoc(userId),
+    {
+      [`pagesCompleted.${page}`]: true,
+    },
+    { merge: true },
+  );
 }
 
 export async function getCompanyByHubspotId(

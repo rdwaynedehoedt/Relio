@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { auth } from "@/lib/firebase";
 import {
@@ -371,6 +372,9 @@ function IntegrationsSection() {
 
 function PreferencesSection() {
   const { preferences, updatePreferences, loading, setTheme } = usePreferences();
+  const { restartWelcomeTour, resetPageHints } = useOnboarding();
+  const [resettingWelcome, setResettingWelcome] = useState(false);
+  const [resettingHints, setResettingHints] = useState(false);
   const [defaultCountry, setDefaultCountry] = useState(
     preferences.defaultCountry ?? "",
   );
@@ -575,6 +579,44 @@ function PreferencesSection() {
               placeholder="United States"
             />
           </label>
+        </div>
+
+        <div className="border-t border-border py-8">
+          <h3 className="text-sm font-medium text-foreground">
+            Onboarding &amp; Help
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Replay the welcome tour or bring back page hints.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10"
+              disabled={resettingWelcome}
+              onClick={() => {
+                setResettingWelcome(true);
+                void restartWelcomeTour().finally(() =>
+                  setResettingWelcome(false),
+                );
+              }}
+            >
+              {resettingWelcome ? "Restarting..." : "Restart welcome tour"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10"
+              disabled={resettingHints}
+              onClick={() => {
+                setResettingHints(true);
+                void resetPageHints().finally(() => setResettingHints(false));
+              }}
+            >
+              {resettingHints ? "Resetting..." : "Reset page hints"}
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 border-t border-border pt-6">

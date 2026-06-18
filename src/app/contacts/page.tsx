@@ -7,6 +7,7 @@ import {
   ArrowUpDown,
   Check,
   ChevronDown,
+  Download,
   Plus,
   RefreshCw,
   Search,
@@ -16,6 +17,7 @@ import {
 import AuthGuard from "@/components/AuthGuard";
 import ContactDetail from "@/components/ContactDetail";
 import ContactDrawer from "@/components/ContactDrawer";
+import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
 import { PanelDeleteDialog } from "@/components/crm-panel";
 import Sidebar from "@/components/Sidebar";
 import SidebarInset from "@/components/SidebarInset";
@@ -29,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { useOnboarding } from "@/context/OnboardingContext";
 import {
   type ContactFormValues,
   type ContactSortOption,
@@ -87,6 +90,7 @@ const sortOptions: { value: ContactSortOption; label: string }[] = [
 
 function ContactsPageContent() {
   const { user } = useAuth();
+  const { state: onboardingState, markPageDone } = useOnboarding();
   const searchParams = useSearchParams();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -113,6 +117,18 @@ function ContactsPageContent() {
   const [hubspotToken, setHubspotToken] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+
+  const showContactsOnboarding =
+    !loading &&
+    contacts.length === 0 &&
+    onboardingState &&
+    !onboardingState.pagesCompleted.contacts;
+
+  useEffect(() => {
+    if (contacts.length > 0 && onboardingState && !onboardingState.pagesCompleted.contacts) {
+      void markPageDone("contacts");
+    }
+  }, [contacts.length, markPageDone, onboardingState]);
 
   useEffect(() => {
     setVisibleColumns(loadVisibleColumns());
@@ -345,6 +361,7 @@ function ContactsPageContent() {
           current.map((item) => (item.id === optimistic.id ? saved : item)),
         );
         setSelectedId(saved.id!);
+        void markPageDone("contacts");
       } catch (error) {
         setContacts((current) =>
           current.filter((item) => item.id !== optimistic.id),
@@ -620,7 +637,20 @@ function ContactsPageContent() {
                         Connect HubSpot
                       </Link>
                     )}
-                    <Button size="sm" className="h-8" onClick={openAddDrawer}>
+                    <Link
+                      id="onboarding-import-btn"
+                      href="/settings?section=integrations"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                    >
+                      <Download className="size-3.5" />
+                      Import
+                    </Link>
+                    <Button
+                      id="onboarding-add-contact-btn"
+                      size="sm"
+                      className="h-8"
+                      onClick={openAddDrawer}
+                    >
                       Add contacts
                     </Button>
                   </div>
@@ -657,6 +687,16 @@ function ContactsPageContent() {
                   </button>
                 </div>
               </div>
+
+              {showContactsOnboarding ? (
+                <div className="shrink-0 px-6">
+                  <OnboardingBanner
+                    page="contacts"
+                    visible={showContactsOnboarding}
+                    onSkip={() => void markPageDone("contacts")}
+                  />
+                </div>
+              ) : null}
 
               <div
                 className="flex shrink-0 items-center gap-1.5 px-6 py-2"

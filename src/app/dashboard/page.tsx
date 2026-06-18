@@ -15,6 +15,7 @@ import {
   Wallet,
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
+import GettingStartedCard from "@/components/onboarding/GettingStartedCard";
 import Sidebar from "@/components/Sidebar";
 import SidebarInset from "@/components/SidebarInset";
 import { SidebarProvider } from "@/hooks/useSidebar";
@@ -36,7 +37,12 @@ import {
   getActivities,
   getCompanies,
   getContacts,
+  getFileImportMeta,
   getFixedDeposits,
+  getGoals,
+  getGoogleIntegration,
+  getHubSpotToken,
+  getNotes,
   getTransactions,
   getWallets,
 } from "@/lib/firestore";
@@ -83,6 +89,9 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [rates, setRates] = useState<ExchangeRates>(DEFAULT_RATES);
+  const [noteCount, setNoteCount] = useState(0);
+  const [goalCount, setGoalCount] = useState(0);
+  const [hasIntegration, setHasIntegration] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -99,6 +108,12 @@ export default function DashboardPage() {
           userTransactions,
           userActivities,
           exchangeRates,
+          userNotes,
+          userGoals,
+          hubspot,
+          google,
+          linkedin,
+          vcf,
         ] = await Promise.all([
           getContacts(userId),
           getCompanies(userId),
@@ -107,6 +122,12 @@ export default function DashboardPage() {
           getTransactions(userId),
           getActivities(userId, 10),
           fetchExchangeRates().catch(() => DEFAULT_RATES),
+          getNotes(userId),
+          getGoals(userId),
+          getHubSpotToken(userId),
+          getGoogleIntegration(userId),
+          getFileImportMeta(userId, "linkedin"),
+          getFileImportMeta(userId, "vcf"),
         ]);
 
         setContacts(userContacts);
@@ -116,6 +137,16 @@ export default function DashboardPage() {
         setTransactions(userTransactions);
         setActivities(userActivities);
         setRates(exchangeRates);
+        setNoteCount(userNotes.length);
+        setGoalCount(userGoals.length);
+        setHasIntegration(
+          Boolean(
+            hubspot?.token ||
+              google?.accessToken ||
+              linkedin?.lastSyncedAt ||
+              vcf?.lastSyncedAt,
+          ),
+        );
       } catch (error) {
         console.error("Failed to load dashboard:", error);
       } finally {
@@ -171,6 +202,14 @@ export default function DashboardPage() {
                 {format(new Date(), "EEEE, d MMMM yyyy")}
               </p>
             </section>
+
+            <GettingStartedCard
+              contactCount={contacts.length}
+              walletCount={wallets.length}
+              noteCount={noteCount}
+              goalCount={goalCount}
+              hasIntegration={hasIntegration}
+            />
 
             {/* Section 2 — Command Center */}
             <section className="mt-6 grid gap-4 xl:grid-cols-3">
