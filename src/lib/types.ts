@@ -171,6 +171,68 @@ export interface UserPreferences {
   theme: ThemeMode;
   defaultCountry?: string;
   defaultCountryCode?: string;
+  birthYear?: number;
+}
+
+export type GoalCategory =
+  | "home"
+  | "travel"
+  | "finance"
+  | "business"
+  | "health"
+  | "life";
+
+export type GoalStatus = "dream" | "active" | "achieved" | "paused";
+
+export interface Milestone {
+  id: string;
+  title: string;
+  completed: boolean;
+  completedAt?: string;
+}
+
+export interface Goal {
+  id?: string;
+  userId: string;
+  title: string;
+  description?: string;
+  category: GoalCategory;
+  status: GoalStatus;
+  targetDate?: string;
+  achievedDate?: string;
+  targetAmount?: number;
+  currentAmount?: number;
+  currency?: string;
+  linkedContactIds?: string[];
+  linkedNoteIds?: string[];
+  coverEmoji?: string;
+  isPinned?: boolean;
+  milestones?: Milestone[];
+  financeLink?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type LifeEventCategory =
+  | "personal"
+  | "travel"
+  | "finance"
+  | "career"
+  | "health"
+  | "milestone";
+
+export type LifeEventMood = "amazing" | "good" | "neutral" | "hard";
+
+export interface LifeEvent {
+  id?: string;
+  userId: string;
+  title: string;
+  description?: string;
+  date: string;
+  category: LifeEventCategory;
+  emoji?: string;
+  mood?: LifeEventMood;
+  createdAt?: string;
 }
 
 export interface HubSpotIntegration {

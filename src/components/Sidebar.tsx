@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Lightbulb,
   LogOut,
+  Map,
   PanelLeftClose,
   Settings,
   Users,
@@ -41,6 +42,7 @@ const primaryNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/finance", label: "Finance", icon: Wallet },
   { href: "/brain", label: "Second Brain", icon: Lightbulb },
+  { href: "/lifemap", label: "Life Map", icon: Map },
 ];
 
 function isActivePath(pathname: string, href: string) {

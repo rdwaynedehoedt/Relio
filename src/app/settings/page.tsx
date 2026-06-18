@@ -203,7 +203,11 @@ function SettingsCard({
 
 function ProfileSection() {
   const { user } = useAuth();
+  const { preferences, updatePreferences } = usePreferences();
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [birthYear, setBirthYear] = useState(
+    preferences.birthYear ? String(preferences.birthYear) : "",
+  );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,6 +216,10 @@ function ProfileSection() {
     setDisplayName(user?.displayName ?? "");
   }, [user?.displayName]);
 
+  useEffect(() => {
+    setBirthYear(preferences.birthYear ? String(preferences.birthYear) : "");
+  }, [preferences.birthYear]);
+
   async function handleSave() {
     if (!auth?.currentUser) return;
 
@@ -219,9 +227,27 @@ function ProfileSection() {
     setError(null);
     setSaved(false);
 
+    const parsedBirthYear = birthYear.trim()
+      ? Number(birthYear.trim())
+      : undefined;
+
+    if (
+      parsedBirthYear !== undefined &&
+      (Number.isNaN(parsedBirthYear) ||
+        parsedBirthYear < 1900 ||
+        parsedBirthYear > new Date().getFullYear())
+    ) {
+      setError("Enter a valid birth year.");
+      setSaving(false);
+      return;
+    }
+
     try {
       await updateProfile(auth.currentUser, {
         displayName: displayName.trim() || null,
+      });
+      await updatePreferences({
+        birthYear: parsedBirthYear,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -277,6 +303,24 @@ function ProfileSection() {
             <p className="text-xs text-muted-foreground">
               Email is managed by your sign-in provider and cannot be changed
               here.
+            </p>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-foreground">
+              Birth year
+            </span>
+            <Input
+              type="number"
+              min={1900}
+              max={new Date().getFullYear()}
+              value={birthYear}
+              onChange={(event) => setBirthYear(event.target.value)}
+              className="h-11"
+              placeholder="e.g. 1990"
+            />
+            <p className="text-xs text-muted-foreground">
+              Used to anchor your Life Map timeline.
             </p>
           </label>
 

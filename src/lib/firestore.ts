@@ -23,6 +23,8 @@ import type {
   GoogleIntegration,
   FileImportIntegration,
   Note,
+  Goal,
+  LifeEvent,
   Transaction,
   TransactionFilters,
   UserPreferences,
@@ -798,4 +800,120 @@ export async function deleteNote(id: string): Promise<void> {
   if (!db) throw new Error("Firestore is not configured.");
 
   await deleteDoc(doc(db, "notes", id));
+}
+
+export async function getGoals(userId: string): Promise<Goal[]> {
+  if (!db) return [];
+
+  const snapshot = await getDocs(
+    query(collection(db, "goals"), where("userId", "==", userId)),
+  );
+
+  return snapshot.docs
+    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as Goal)
+    .sort((a, b) =>
+      (b.updatedAt ?? b.createdAt ?? "").localeCompare(
+        a.updatedAt ?? a.createdAt ?? "",
+      ),
+    );
+}
+
+export async function addGoal(
+  goal: Omit<Goal, "id" | "createdAt" | "updatedAt">,
+): Promise<Goal> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const now = new Date().toISOString();
+  const docRef = await addDoc(
+    collection(db, "goals"),
+    omitUndefined({
+      ...goal,
+      createdAt: now,
+      updatedAt: now,
+    }),
+  );
+
+  return {
+    id: docRef.id,
+    ...goal,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export async function updateGoal(
+  id: string,
+  data: Partial<Goal>,
+  options?: { clearCurrentAmount?: boolean },
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const { id: _id, createdAt, userId, ...updates } = data;
+
+  const payload: Record<string, unknown> = {
+    ...omitUndefined(updates),
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (options?.clearCurrentAmount) {
+    payload.currentAmount = deleteField();
+  }
+
+  await updateDoc(doc(db, "goals", id), payload);
+}
+
+export async function deleteGoal(id: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "goals", id));
+}
+
+export async function getLifeEvents(userId: string): Promise<LifeEvent[]> {
+  if (!db) return [];
+
+  const snapshot = await getDocs(
+    query(collection(db, "lifeEvents"), where("userId", "==", userId)),
+  );
+
+  return snapshot.docs
+    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as LifeEvent)
+    .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+}
+
+export async function addLifeEvent(
+  event: Omit<LifeEvent, "id" | "createdAt">,
+): Promise<LifeEvent> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const now = new Date().toISOString();
+  const docRef = await addDoc(
+    collection(db, "lifeEvents"),
+    omitUndefined({
+      ...event,
+      createdAt: now,
+    }),
+  );
+
+  return {
+    id: docRef.id,
+    ...event,
+    createdAt: now,
+  };
+}
+
+export async function updateLifeEvent(
+  id: string,
+  data: Partial<LifeEvent>,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const { id: _id, createdAt, userId, ...updates } = data;
+
+  await updateDoc(doc(db, "lifeEvents", id), omitUndefined(updates));
+}
+
+export async function deleteLifeEvent(id: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "lifeEvents", id));
 }
