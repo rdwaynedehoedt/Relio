@@ -95,11 +95,12 @@ export default function LifeMapPage() {
   const [goalDetailOpen, setGoalDetailOpen] = useState(false);
   const [detailGoal, setDetailGoal] = useState<Goal | null>(null);
 
-  const showLifemapOnboarding =
+  const showLifemapOnboarding = Boolean(
     !loading &&
-    goals.length === 0 &&
-    onboardingState &&
-    !onboardingState.pagesCompleted.lifemap;
+      goals.length === 0 &&
+      onboardingState &&
+      !onboardingState.pagesCompleted.lifemap,
+  );
 
   useEffect(() => {
     if (goals.length > 0 && onboardingState && !onboardingState.pagesCompleted.lifemap) {
@@ -373,20 +374,12 @@ export default function LifeMapPage() {
                     <Sparkles className="size-4" />
                     Add Life Event
                   </Button>
-                  <Button id="onboarding-new-goal-btn" onClick={openAddGoalDrawer}>
+                  <Button data-tour="new-goal-btn" onClick={openAddGoalDrawer}>
                     <Plus className="size-4" />
                     New Goal
                   </Button>
                 </div>
               </div>
-
-              {showLifemapOnboarding ? (
-                <OnboardingBanner
-                  page="lifemap"
-                  visible={showLifemapOnboarding}
-                  onSkip={() => void markPageDone("lifemap")}
-                />
-              ) : null}
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <StatChip
@@ -514,6 +507,12 @@ export default function LifeMapPage() {
           onEdit={() => {
             if (detailGoal) openEditGoalDrawer(detailGoal);
           }}
+        />
+
+        <OnboardingBanner
+          page="lifemap"
+          visible={showLifemapOnboarding && !goalDrawerOpen}
+          onSkip={() => void markPageDone("lifemap")}
         />
       </SidebarProvider>
     </AuthGuard>

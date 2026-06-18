@@ -118,11 +118,12 @@ function ContactsPageContent() {
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
-  const showContactsOnboarding =
+  const showContactsOnboarding = Boolean(
     !loading &&
-    contacts.length === 0 &&
-    onboardingState &&
-    !onboardingState.pagesCompleted.contacts;
+      contacts.length === 0 &&
+      onboardingState &&
+      !onboardingState.pagesCompleted.contacts,
+  );
 
   useEffect(() => {
     if (contacts.length > 0 && onboardingState && !onboardingState.pagesCompleted.contacts) {
@@ -638,7 +639,7 @@ function ContactsPageContent() {
                       </Link>
                     )}
                     <Link
-                      id="onboarding-import-btn"
+                      data-tour="import-btn"
                       href="/settings?section=integrations"
                       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                     >
@@ -646,7 +647,7 @@ function ContactsPageContent() {
                       Import
                     </Link>
                     <Button
-                      id="onboarding-add-contact-btn"
+                      data-tour="add-contact-btn"
                       size="sm"
                       className="h-8"
                       onClick={openAddDrawer}
@@ -687,16 +688,6 @@ function ContactsPageContent() {
                   </button>
                 </div>
               </div>
-
-              {showContactsOnboarding ? (
-                <div className="shrink-0 px-6">
-                  <OnboardingBanner
-                    page="contacts"
-                    visible={showContactsOnboarding}
-                    onSkip={() => void markPageDone("contacts")}
-                  />
-                </div>
-              ) : null}
 
               <div
                 className="flex shrink-0 items-center gap-1.5 px-6 py-2"
@@ -1015,6 +1006,12 @@ function ContactsPageContent() {
         mode={drawerMode}
         contact={drawerMode === "edit" ? selectedContact : null}
         onSubmit={handleDrawerSubmit}
+      />
+
+      <OnboardingBanner
+        page="contacts"
+        visible={showContactsOnboarding && !drawerOpen}
+        onSkip={() => void markPageDone("contacts")}
       />
 
       <PanelDeleteDialog

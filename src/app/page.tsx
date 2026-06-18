@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import RelioLogo from "@/components/RelioLogo";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+
+const FEATURES = [
+  "Contacts & companies",
+  "Finance across currencies",
+  "Second Brain for ideas",
+  "Life Map for goals",
+  "HubSpot, Google & more",
+] as const;
 
 function GoogleIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="size-4 shrink-0" aria-hidden="true">
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
         fill="#4285F4"
@@ -31,15 +37,101 @@ function GoogleIcon() {
   );
 }
 
-const features = [
-  "Contacts & companies in one place",
-  "HubSpot import built in",
-  "Built for calm, focused selling",
-];
+function RelioMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn("size-10", className)}
+      aria-hidden="true"
+    >
+      <rect
+        width="40"
+        height="40"
+        rx="8"
+        className="fill-[#0a0a0a] dark:fill-white"
+      />
+      <text
+        x="20"
+        y="27"
+        textAnchor="middle"
+        className="fill-white text-[22px] font-semibold dark:fill-[#0a0a0a]"
+        style={{ fontFamily: "var(--font-plus-jakarta), system-ui, sans-serif" }}
+      >
+        R
+      </text>
+    </svg>
+  );
+}
 
-export default function LoginPage() {
-  const { user, loading, signIn, sendMagicLink } = useAuth();
-  const router = useRouter();
+function LeftPanelContent({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "login-fade-up flex w-full flex-col",
+        compact ? "items-center text-center" : "max-w-lg",
+      )}
+    >
+      <p
+        className={cn(
+          "font-extralight tracking-[0.35em] text-white lowercase",
+          compact ? "text-5xl sm:text-6xl" : "text-7xl xl:text-[5.5rem]",
+        )}
+      >
+        relio
+      </p>
+
+      <div
+        className={cn(
+          "h-px bg-white/10",
+          compact ? "mt-5 w-16" : "mt-8 w-full max-w-xs",
+        )}
+      />
+
+      <h1
+        className={cn(
+          "font-semibold tracking-tight text-white",
+          compact
+            ? "mt-6 text-2xl leading-tight sm:text-3xl"
+            : "mt-10 text-4xl leading-[1.08] xl:text-[2.75rem]",
+        )}
+      >
+        Remember everyone
+        <br />
+        that matters.
+      </h1>
+
+      {!compact ? (
+        <>
+          <p className="mt-5 max-w-md text-sm leading-relaxed text-white/50">
+            Your personal OS for relationships,
+            <br />
+            money, and life goals.
+          </p>
+
+          <ul className="mt-10 w-full max-w-md">
+            {FEATURES.map((feature, index) => (
+              <li key={feature}>
+                {index > 0 ? (
+                  <div className="my-3 h-px bg-white/10" aria-hidden />
+                ) : null}
+                <div className="flex items-center gap-3">
+                  <span className="size-1 shrink-0 rounded-full bg-white/60" />
+                  <span className="text-sm text-white/60">{feature}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function SignInPanel() {
+  const { signIn, sendMagicLink } = useAuth();
+  const emailRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
   const [sendingLink, setSendingLink] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -47,10 +139,10 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && user) {
-      router.replace("/dashboard");
+    if (!linkSent) {
+      emailRef.current?.focus();
     }
-  }, [user, loading, router]);
+  }, [linkSent]);
 
   async function handleGoogleSignIn() {
     setError(null);
@@ -71,7 +163,6 @@ export default function LoginPage() {
 
   async function handleMagicLinkSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     if (!email.trim()) return;
 
     setError(null);
@@ -91,76 +182,73 @@ export default function LoginPage() {
     }
   }
 
-  if (loading || user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-white" />
-      </div>
-    );
-  }
-
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-zinc-950 px-6 py-16">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.06),transparent_55%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.08),transparent_45%)]" />
+    <div className="login-fade-up-delayed mx-auto flex w-full max-w-[340px] flex-col items-center">
+      <RelioMark />
+      <p className="mt-5 text-2xl font-extralight tracking-[0.28em] text-[#0a0a0a] lowercase dark:text-white">
+        relio
+      </p>
+      <p className="mt-2 text-sm text-[#0a0a0a]/45 dark:text-white/45">
+        Sign in to continue
+      </p>
 
-      <div className="relative flex w-full max-w-md flex-col items-center text-center">
-        <RelioLogo className="mb-10 size-16 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_20px_40px_-12px_rgba(0,0,0,0.5)]" />
-
-        <h1 className="text-4xl font-bold tracking-tight text-white">
-          Relio
-        </h1>
-        <p className="mt-4 max-w-sm text-base leading-relaxed text-zinc-400">
-          Your calm, confident CRM for modern teams.
-        </p>
-
-        <div className="mt-12 w-full rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-8 shadow-2xl backdrop-blur-sm">
-          <Button
-            variant="outline"
-            size="lg"
-            disabled={googleLoading || sendingLink}
-            className="h-12 w-full gap-3 border-zinc-700 bg-zinc-950 text-[15px] font-medium text-white hover:bg-zinc-800 hover:text-white"
-            onClick={handleGoogleSignIn}
-          >
-            {googleLoading ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-white" />
-            ) : (
-              <GoogleIcon />
-            )}
-            Continue with Google
-          </Button>
-
-          <div className="relative my-8">
-            <Separator className="bg-zinc-800" />
-            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-zinc-900/60 px-3 text-xs font-medium text-zinc-500">
-              or
-            </span>
+      <div className="mt-10 w-full">
+        {linkSent ? (
+          <div className="text-center">
+            <p className="text-5xl leading-none text-[#0a0a0a] dark:text-white">
+              &#9993;
+            </p>
+            <p className="mt-6 text-lg font-semibold tracking-tight text-[#0a0a0a] dark:text-white">
+              Check your inbox
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[#0a0a0a]/50 dark:text-white/50">
+              We sent a sign in link to{" "}
+              <span className="font-medium text-[#0a0a0a]/70 dark:text-white/70">
+                {email}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setLinkSent(false);
+                setError(null);
+              }}
+              className="mt-6 text-sm text-[#0a0a0a]/45 underline underline-offset-4 transition-opacity hover:opacity-70 dark:text-white/45"
+            >
+              Use a different email
+            </button>
           </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={googleLoading || sendingLink}
+              onClick={() => void handleGoogleSignIn()}
+              className={cn(
+                "flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border text-sm font-medium transition-colors",
+                "border-[#0a0a0a]/15 bg-white text-[#0a0a0a] hover:bg-[#0a0a0a]/[0.03]",
+                "dark:border-white/15 dark:bg-[#0a0a0a] dark:text-white dark:hover:bg-white/[0.04]",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+              )}
+            >
+              {googleLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <GoogleIcon />
+              )}
+              Continue with Google
+            </button>
 
-          {linkSent ? (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/80 px-4 py-5 text-left">
-              <p className="text-sm font-medium text-white">
-                Check your email — we sent you a sign in link
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                We sent a link to{" "}
-                <span className="font-medium text-zinc-300">{email}</span>.
-                Open it on this device to continue.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setLinkSent(false);
-                  setError(null);
-                }}
-                className="mt-4 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-              >
-                Use a different email
-              </button>
+            <div className="relative my-6">
+              <div className="h-px bg-[#0a0a0a]/10 dark:bg-white/10" />
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-xs text-[#0a0a0a]/35 dark:bg-[#0a0a0a] dark:text-white/35">
+                or
+              </span>
             </div>
-          ) : (
-            <form onSubmit={handleMagicLinkSubmit} className="space-y-3 text-left">
-              <Input
+
+            <form onSubmit={(event) => void handleMagicLinkSubmit(event)}>
+              <input
+                ref={emailRef}
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -168,42 +256,79 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 disabled={sendingLink || googleLoading}
-                className="h-12 border-zinc-700 bg-zinc-950 px-4 text-[15px] text-white placeholder:text-zinc-500"
+                className={cn(
+                  "h-11 w-full rounded-lg border bg-transparent px-3.5 text-sm outline-none transition-colors",
+                  "border-[#0a0a0a]/15 text-[#0a0a0a] placeholder:text-[#0a0a0a]/30",
+                  "focus:border-[#0a0a0a]/35",
+                  "dark:border-white/15 dark:text-white dark:placeholder:text-white/30",
+                  "dark:focus:border-white/35",
+                  "disabled:cursor-not-allowed disabled:opacity-50",
+                )}
               />
-              <Button
+              <button
                 type="submit"
-                size="lg"
                 disabled={sendingLink || googleLoading || !email.trim()}
-                className="h-12 w-full bg-white text-[15px] font-medium text-zinc-950 hover:bg-zinc-200"
+                className={cn(
+                  "mt-3 flex h-11 w-full items-center justify-center rounded-lg text-sm font-medium transition-opacity",
+                  "bg-[#0a0a0a] text-white hover:opacity-85",
+                  "dark:bg-white dark:text-[#0a0a0a] dark:hover:opacity-90",
+                  "disabled:cursor-not-allowed disabled:opacity-40",
+                )}
               >
                 {sendingLink ? (
-                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" />
+                  <Loader2 className="size-4 animate-spin" />
                 ) : (
                   "Send magic link"
                 )}
-              </Button>
+              </button>
             </form>
-          )}
+          </>
+        )}
 
-          {error ? (
-            <p className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-left text-sm text-red-300">
-              {error}
-            </p>
-          ) : null}
-
-          <ul className="mt-8 space-y-3 text-left">
-            {features.map((feature) => (
-              <li
-                key={feature}
-                className="flex items-center gap-3 text-sm text-zinc-400"
-              >
-                <span className="size-1.5 shrink-0 rounded-full bg-zinc-500" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
+        {error ? (
+          <p className="mt-4 border border-red-500/20 px-3 py-2.5 text-left text-sm text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace("/dashboard");
+    }
+  }, [user, loading, router]);
+
+  if (loading || user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-[#0a0a0a]">
+        <Loader2 className="size-5 animate-spin text-[#0a0a0a]/40 dark:text-white/40" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen max-h-[100dvh] flex-col overflow-hidden lg:flex-row">
+      <section className="relative hidden bg-[#0a0a0a] lg:flex lg:w-[55%] lg:items-center lg:justify-center lg:px-16 xl:px-24">
+        <LeftPanelContent />
+        <p className="absolute bottom-8 left-16 text-[11px] tracking-wide text-white/30 xl:left-24">
+          Built for growth leads, founders &amp; operators
+        </p>
+      </section>
+
+      <section className="flex h-[40vh] shrink-0 items-center justify-center bg-[#0a0a0a] px-8 lg:hidden">
+        <LeftPanelContent compact />
+      </section>
+
+      <section className="flex min-h-0 flex-1 items-center justify-center bg-white px-8 py-10 dark:bg-[#0a0a0a] lg:h-screen lg:w-[45%] lg:flex-none lg:py-0">
+        <SignInPanel />
+      </section>
     </div>
   );
 }

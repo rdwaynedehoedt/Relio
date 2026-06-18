@@ -12,10 +12,80 @@ body {
     env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
+.tour-target-active {
+  position: relative;
+  z-index: 90 !important;
+  pointer-events: auto !important;
+}
+
+.tour-fade-in {
+  animation: tour-fade-in 0.3s ease-out forwards;
+}
+
+.tour-step-enter {
+  animation: tour-step-enter 0.28s ease-out forwards;
+}
+
+.tour-spotlight-ring {
+  transition:
+    left 0.28s ease,
+    top 0.28s ease,
+    width 0.28s ease,
+    height 0.28s ease;
+}
+
+.tour-spotlight-cutout {
+  transition:
+    x 0.28s ease,
+    y 0.28s ease,
+    width 0.28s ease,
+    height 0.28s ease;
+}
+
+@keyframes tour-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tour-step-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .onboarding-highlight {
   animation: onboarding-pulse 2s ease-in-out infinite;
   position: relative;
   z-index: 20;
+}
+
+@keyframes login-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-fade-up {
+  animation: login-fade-up 0.55s ease-out forwards;
+}
+
+.login-fade-up-delayed {
+  opacity: 0;
+  animation: login-fade-up 0.55s ease-out 150ms forwards;
 }
 
 @keyframes onboarding-pulse {

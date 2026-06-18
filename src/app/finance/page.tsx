@@ -97,11 +97,12 @@ export default function FinancePage() {
     month: getCurrentMonthKey(),
   });
 
-  const showFinanceOnboarding =
+  const showFinanceOnboarding = Boolean(
     !loading &&
-    wallets.length === 0 &&
-    onboardingState &&
-    !onboardingState.pagesCompleted.finance;
+      wallets.length === 0 &&
+      onboardingState &&
+      !onboardingState.pagesCompleted.finance,
+  );
 
   useEffect(() => {
     if (wallets.length > 0 && onboardingState && !onboardingState.pagesCompleted.finance) {
@@ -348,15 +349,10 @@ export default function FinancePage() {
               </div>
             </div>
 
-            {showFinanceOnboarding ? (
-              <OnboardingBanner
-                page="finance"
-                visible={showFinanceOnboarding}
-                onSkip={() => void markPageDone("finance")}
-              />
-            ) : null}
-
-            <section className="mt-6 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+            <section
+              data-tour="exchange-rates"
+              className="mt-6 rounded-2xl border border-border/60 bg-card p-4 shadow-sm"
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-4">
                   {ratePairs.map(({ from, label }) => (
@@ -493,7 +489,7 @@ export default function FinancePage() {
                   </p>
                 </div>
                 <Button
-                  id="onboarding-add-wallet-btn"
+                  data-tour="add-wallet-btn"
                   size="sm"
                   onClick={() => setWalletDrawerOpen(true)}
                 >
@@ -820,6 +816,12 @@ export default function FinancePage() {
         onOpenChange={setCsvDialogOpen}
         wallets={wallets}
         onImport={handleCsvImport}
+      />
+
+      <OnboardingBanner
+        page="finance"
+        visible={showFinanceOnboarding && !walletDrawerOpen}
+        onSkip={() => void markPageDone("finance")}
       />
       </SidebarProvider>
     </AuthGuard>

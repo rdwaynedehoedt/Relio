@@ -18,14 +18,14 @@ import {
   type User,
 } from "firebase/auth";
 import { auth, googleContactsProvider, googleProvider } from "@/lib/firebase";
+import {
+  clearStoredEmailForSignIn,
+  getMagicLinkCallbackUrl,
+  storeEmailForSignIn,
+} from "@/lib/auth-utils";
 import { saveGoogleIntegration } from "@/lib/firestore";
 
 export const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
-
-const actionCodeSettings = {
-  url: "http://localhost:3000/auth/callback",
-  handleCodeInApp: true,
-};
 
 interface AuthContextValue {
   user: User | null;
@@ -104,8 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Firebase is not configured. Add credentials to .env.local.");
     }
 
-    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-    window.localStorage.setItem(EMAIL_FOR_SIGN_IN_KEY, email);
+    await sendSignInLinkToEmail(auth, email, {
+      url: getMagicLinkCallbackUrl(),
+      handleCodeInApp: true,
+    });
+    storeEmailForSignIn(email);
   };
 
   const completeMagicLinkSignIn = async (email: string, url: string) => {
@@ -118,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await signInWithEmailLink(auth, email, url);
-    window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
+    clearStoredEmailForSignIn();
   };
 
   return (

@@ -81,11 +81,12 @@ export default function BrainPage() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const showBrainOnboarding =
+  const showBrainOnboarding = Boolean(
     !loading &&
-    notes.length === 0 &&
-    onboardingState &&
-    !onboardingState.pagesCompleted.brain;
+      notes.length === 0 &&
+      onboardingState &&
+      !onboardingState.pagesCompleted.brain,
+  );
 
   useEffect(() => {
     if (notes.length > 0 && onboardingState && !onboardingState.pagesCompleted.brain) {
@@ -219,19 +220,11 @@ export default function BrainPage() {
                     Ideas, articles, meetings, and decisions in one place
                   </p>
                 </div>
-                <Button id="onboarding-new-note-btn" onClick={openAddDrawer}>
+                <Button data-tour="new-note-btn" onClick={openAddDrawer}>
                   <Plus className="size-4" />
                   New Note
                 </Button>
               </div>
-
-              {showBrainOnboarding ? (
-                <OnboardingBanner
-                  page="brain"
-                  visible={showBrainOnboarding}
-                  onSkip={() => void markPageDone("brain")}
-                />
-              ) : null}
 
               <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="relative max-w-md flex-1">
@@ -337,6 +330,12 @@ export default function BrainPage() {
           note={selectedNote}
           onSave={handleSave}
           onDelete={handleDelete}
+        />
+
+        <OnboardingBanner
+          page="brain"
+          visible={showBrainOnboarding && !drawerOpen}
+          onSkip={() => void markPageDone("brain")}
         />
       </SidebarProvider>
     </AuthGuard>

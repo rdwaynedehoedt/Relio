@@ -13,108 +13,79 @@ export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
 };
 
 export interface OnboardingStep {
-  emoji: string;
   title: string;
   description: string;
-  highlightId?: string;
+  /** data-tour attribute value on the target element */
+  target?: string;
+  /** Clicking the target completes the tour UI (drawer open / save still marks done) */
+  isAction?: boolean;
 }
-
-export const PAGE_ONBOARDING_THEMES: Record<
-  OnboardingPage,
-  { bg: string; border: string }
-> = {
-  contacts: {
-    bg: "bg-blue-500/8 dark:bg-blue-400/10",
-    border: "border-blue-500/20",
-  },
-  companies: {
-    bg: "bg-violet-500/8 dark:bg-violet-400/10",
-    border: "border-violet-500/20",
-  },
-  finance: {
-    bg: "bg-emerald-500/8 dark:bg-emerald-400/10",
-    border: "border-emerald-500/20",
-  },
-  brain: {
-    bg: "bg-amber-500/8 dark:bg-amber-400/10",
-    border: "border-amber-500/20",
-  },
-  lifemap: {
-    bg: "bg-rose-500/8 dark:bg-rose-400/10",
-    border: "border-rose-500/20",
-  },
-};
 
 export const CONTACTS_ONBOARDING_STEPS: OnboardingStep[] = [
   {
-    emoji: "👥",
-    title: "Your relationship network starts here",
+    title: "Your contacts live here",
     description:
-      "Relio keeps track of everyone you know — contacts, their companies, and your history with them.",
+      "Everyone you know is tracked here — people, companies, and your history with them.",
   },
   {
-    emoji: "🔌",
-    title: "Import or add manually",
+    title: "Import existing contacts",
     description:
-      "You can import from HubSpot, Google Contacts, LinkedIn or your phone — or add contacts one by one.",
-    highlightId: "onboarding-import-btn",
+      "Click here to bring in contacts from HubSpot, Google, LinkedIn, or your phone.",
+    target: "import-btn",
   },
   {
-    emoji: "✨",
     title: "Add your first contact",
-    description: "Let's add someone you work with right now.",
-    highlightId: "onboarding-add-contact-btn",
+    description: "Click here to add someone you work with right now.",
+    target: "add-contact-btn",
+    isAction: true,
   },
 ];
 
 export const FINANCE_ONBOARDING_STEPS: OnboardingStep[] = [
   {
-    emoji: "💰",
-    title: "Track your money across currencies",
+    title: "Track money across currencies",
     description:
-      "Relio supports LKR, USD, GBP, AED, AUD — see your real net worth in one place.",
+      "Relio supports LKR, USD, GBP, AED, and AUD — your net worth in one place.",
   },
   {
-    emoji: "📊",
-    title: "Live exchange rates built in",
+    title: "Live exchange rates",
     description:
-      "Rates update daily from mid-market data. Every wallet shows its LKR equivalent automatically.",
+      "Rates update daily from mid-market data. Every wallet shows its LKR equivalent.",
+    target: "exchange-rates",
   },
   {
-    emoji: "🏦",
     title: "Create your first wallet",
-    description: "Start with your main bank account or cash wallet.",
-    highlightId: "onboarding-add-wallet-btn",
+    description: "Click here to add your main bank account or cash wallet.",
+    target: "add-wallet-btn",
+    isAction: true,
   },
 ];
 
 export const BRAIN_ONBOARDING_STEPS: OnboardingStep[] = [
   {
-    emoji: "🧠",
-    title: "Capture everything that matters",
+    title: "Capture what matters",
     description:
-      "Ideas, articles, meeting notes, decisions — all in one searchable place, tagged and organised.",
+      "Ideas, articles, meeting notes, and decisions — searchable and organised.",
   },
   {
-    emoji: "✨",
-    title: "Save your first thought",
-    description: "What's on your mind right now?",
-    highlightId: "onboarding-new-note-btn",
+    title: "Save your first note",
+    description: "Click here to write down what's on your mind right now.",
+    target: "new-note-btn",
+    isAction: true,
   },
 ];
 
 export const LIFEMAP_ONBOARDING_STEPS: OnboardingStep[] = [
   {
-    emoji: "🗺️",
-    title: "Your life, mapped out",
+    title: "Map out your life",
     description:
-      "Plot your big goals on a timeline — buy a house, travel the world, build something great. Relio connects them to your real financial data.",
+      "Plot big goals on a timeline and connect them to your real financial data.",
   },
   {
-    emoji: "🎯",
-    title: "Add your first life goal",
-    description: "Start with something big you're working towards.",
-    highlightId: "onboarding-new-goal-btn",
+    title: "Add your first goal",
+    description: "Click here to add something big you're working towards.",
+    target: "new-goal-btn",
+    isAction: true,
   },
 ];
 
