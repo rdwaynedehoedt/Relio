@@ -23,12 +23,6 @@ import {
   useSidebar,
 } from "@/hooks/useSidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import RelioLogo from "@/components/RelioLogo";
 import { cn } from "@/lib/utils";
@@ -96,6 +90,37 @@ function SidebarNavLink({
   );
 }
 
+
+function SidebarNavButton({
+  label,
+  icon: Icon,
+  collapsed,
+  onClick,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  collapsed: boolean;
+  onClick: () => void;
+}) {
+  const button = (
+    <button
+      type="button"
+      onClick={onClick}
+      className={navLinkClass(false, collapsed)}
+    >
+      <Icon className="size-[18px] shrink-0" />
+      {!collapsed ? <span className="truncate">{label}</span> : null}
+    </button>
+  );
+
+  if (!collapsed) return button;
+
+  return (
+    <Tooltip content={label} side="right" className="flex w-full justify-center">
+      {button}
+    </Tooltip>
+  );
+}
 
 function SidebarShell() {
   const pathname = usePathname();
@@ -240,6 +265,12 @@ function SidebarShell() {
             collapsed={isCollapsed}
             onNavigate={handleNavigate}
           />
+          <SidebarNavButton
+            label="Sign out"
+            icon={LogOut}
+            collapsed={isCollapsed}
+            onClick={() => void signOut()}
+          />
         </div>
 
         {!isMobile ? (
@@ -276,51 +307,35 @@ function SidebarShell() {
         <div className={cn("shrink-0 border-t border-sidebar-border", railPadding, "py-3")}>
           {isCollapsed ? (
             <Tooltip content={displayName} side="right" className="flex justify-center">
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex size-10 items-center justify-center rounded-lg outline-none transition-colors hover:bg-sidebar-accent/70">
-                  <Avatar size="sm">
-                    <AvatarImage
-                      src={user?.photoURL ?? undefined}
-                      alt={displayName}
-                    />
-                    <AvatarFallback className="bg-sidebar-accent text-xs font-medium text-sidebar-accent-foreground">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="right" className="w-60">
-                  <DropdownMenuItem onClick={() => signOut()} className="gap-2.5">
-                    <LogOut className="size-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </Tooltip>
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left outline-none transition-colors hover:bg-sidebar-accent/70">
+              <div className="flex size-10 items-center justify-center rounded-lg">
                 <Avatar size="sm">
-                  <AvatarImage src={user?.photoURL ?? undefined} alt={displayName} />
+                  <AvatarImage
+                    src={user?.photoURL ?? undefined}
+                    alt={displayName}
+                  />
                   <AvatarFallback className="bg-sidebar-accent text-xs font-medium text-sidebar-accent-foreground">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-sidebar-foreground">
-                    {displayName}
-                  </p>
-                  <p className="truncate text-xs leading-relaxed text-muted-foreground">
-                    {user?.email}
-                  </p>
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="top" className="w-60">
-                <DropdownMenuItem onClick={() => signOut()} className="gap-2.5">
-                  <LogOut className="size-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </div>
+            </Tooltip>
+          ) : (
+            <div className="flex w-full items-center gap-3 rounded-lg px-2 py-2">
+              <Avatar size="sm">
+                <AvatarImage src={user?.photoURL ?? undefined} alt={displayName} />
+                <AvatarFallback className="bg-sidebar-accent text-xs font-medium text-sidebar-accent-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">
+                  {displayName}
+                </p>
+                <p className="truncate text-xs leading-relaxed text-muted-foreground">
+                  {user?.email}
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </aside>

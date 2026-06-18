@@ -21,7 +21,7 @@ import {
   POPOVER_WIDTH,
   saveTourStep,
   scheduleTourMeasure,
-  scrollTourTargetIntoView,
+  scrollAndMeasure,
   type PopoverPlacement,
   type SpotlightRect,
 } from "@/lib/onboarding-tour";
@@ -117,7 +117,6 @@ export default function OnboardingBanner({
 }: OnboardingBannerProps) {
   const steps = PAGE_ONBOARDING_STEPS[page];
   const popoverRef = useRef<HTMLDivElement>(null);
-  const scrollTimerRef = useRef<number | null>(null);
 
   const [stepIndex, setStepIndex] = useState(() => getSavedTourStep(page));
   const [mounted, setMounted] = useState(false);
@@ -129,6 +128,7 @@ export default function OnboardingBanner({
     arrowOffset: POPOVER_WIDTH / 2,
   });
   const [popoverHeight, setPopoverHeight] = useState(180);
+  const [popoverMeasured, setPopoverMeasured] = useState(false);
 
   const step = steps[stepIndex] as OnboardingStep | undefined;
   const isLastStep = stepIndex >= steps.length - 1;
@@ -148,7 +148,11 @@ export default function OnboardingBanner({
     setSpotlight(nextSpotlight);
 
     const measuredHeight = popoverRef.current?.offsetHeight ?? popoverHeight;
+    if (measuredHeight !== popoverHeight) {
+      setPopoverHeight(measuredHeight);
+    }
     setPopoverPos(getPopoverPosition(nextSpotlight, measuredHeight));
+    setPopoverMeasured(true);
   }, [step, popoverHeight]);
 
   useEffect(() => {
@@ -161,15 +165,8 @@ export default function OnboardingBanner({
   }, [page, steps.length]);
 
   useEffect(() => {
-    if (!visible) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [visible]);
+    setPopoverMeasured(false);
+  }, [stepIndex, step]);
 
   useLayoutEffect(() => {
     if (!visible || !step) return;
@@ -177,6 +174,7 @@ export default function OnboardingBanner({
     const target = getTourTarget(step.target);
     let resizeObserver: ResizeObserver | null = null;
     let activeTarget: HTMLElement | null = null;
+    let cancelled = false;
 
     const measure = () => {
       scheduleTourMeasure(measureLayout);
@@ -185,7 +183,6 @@ export default function OnboardingBanner({
     if (target) {
       activeTarget = target;
       target.classList.add("tour-target-active");
-      scrollTourTargetIntoView(target);
 
       resizeObserver = new ResizeObserver(measure);
       resizeObserver.observe(target);
@@ -194,11 +191,11 @@ export default function OnboardingBanner({
         resizeObserver.observe(target.parentElement);
       }
 
-      measure();
-      if (scrollTimerRef.current) {
-        window.clearTimeout(scrollTimerRef.current);
-      }
-      scrollTimerRef.current = window.setTimeout(measure, 400);
+      void scrollAndMeasure(target, () => {
+        if (!cancelled) {
+          measure();
+        }
+      });
     } else {
       measureLayout();
     }
@@ -209,13 +206,11 @@ export default function OnboardingBanner({
     window.visualViewport?.addEventListener("scroll", measure);
 
     return () => {
+      cancelled = true;
       if (activeTarget) {
         activeTarget.classList.remove("tour-target-active");
       }
       resizeObserver?.disconnect();
-      if (scrollTimerRef.current) {
-        window.clearTimeout(scrollTimerRef.current);
-      }
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
       window.visualViewport?.removeEventListener("resize", measure);
@@ -229,6 +224,7 @@ export default function OnboardingBanner({
     if (measured !== popoverHeight) {
       setPopoverHeight(measured);
       setPopoverPos(getPopoverPosition(spotlight, measured));
+      setPopoverMeasured(true);
     }
   }, [step, stepIndex, spotlight, popoverHeight]);
 
@@ -259,42 +255,49 @@ export default function OnboardingBanner({
   if (!visible || !step || steps.length === 0 || !mounted) return null;
 
   const content = (
-    <div className="tour-overlay-root animate-in fade-in duration-300">
-      <TourBackdrop
-        spotlight={hasTarget ? spotlight : null}
-        fullScreen={!hasTarget || !spotlight}
-      />
-
-      {hasTarget && spotlight ? (
-        <div
-          className="pointer-events-none fixed rounded-lg border-2 border-white/90 shadow-[0_0_0_1px_rgba(255,255,255,0.35)] tour-spotlight-ring"
-          style={{
-            left: spotlight.x,
-            top: spotlight.y,
-            width: spotlight.width,
-            height: spotlight.height,
-          }}
-          aria-hidden
+    <>
+      <div className="tour-overlay-root animate-in fade-in duration-300">
+        <TourBackdrop
+          spotlight={hasTarget ? spotlight : null}
+          fullScreen={!hasTarget || !spotlight}
         />
-      ) : null}
 
-      <button
-        type="button"
-        onClick={handleSkip}
-        className="pointer-events-auto fixed top-5 right-5 z-[2] rounded-lg border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm transition-colors hover:bg-black/60"
-      >
-        Skip tour
-      </button>
+        {hasTarget && spotlight ? (
+          <div
+            className="pointer-events-none fixed rounded-lg border-2 border-white/90 shadow-[0_0_0_1px_rgba(255,255,255,0.35)] tour-spotlight-ring"
+            style={{
+              left: spotlight.x,
+              top: spotlight.y,
+              width: spotlight.width,
+              height: spotlight.height,
+            }}
+            aria-hidden
+          />
+        ) : null}
+
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="pointer-events-auto fixed top-5 right-5 z-[2] rounded-lg border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm transition-colors hover:bg-black/60"
+        >
+          Skip tour
+        </button>
+      </div>
 
       <div
         ref={popoverRef}
         role="dialog"
         aria-labelledby="onboarding-tour-title"
-        className="pointer-events-auto fixed z-[2] rounded-xl border border-border/60 bg-card p-4 shadow-xl tour-step-enter"
+        className={cn(
+          "pointer-events-auto fixed rounded-xl border border-border/60 bg-card p-4 shadow-xl tour-step-enter",
+          step.isAction ? "z-[95]" : "z-[90]",
+        )}
         style={{
           top: popoverPos.top,
           left: popoverPos.left,
           width: POPOVER_WIDTH,
+          opacity: popoverMeasured ? 1 : 0,
+          transition: "opacity 150ms ease",
         }}
       >
         <PopoverArrow
@@ -349,7 +352,7 @@ export default function OnboardingBanner({
           </Button>
         </div>
       </div>
-    </div>
+    </>
   );
 
   return createPortal(content, document.body);

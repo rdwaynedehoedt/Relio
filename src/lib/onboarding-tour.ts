@@ -73,13 +73,39 @@ export function getTourTarget(target?: string): HTMLElement | null {
   return document.querySelector(`[data-tour="${target}"]`);
 }
 
-export function scrollTourTargetIntoView(target: HTMLElement | null) {
-  if (!target) return;
-  target.scrollIntoView({
-    behavior: "smooth",
-    block: "center",
-    inline: "nearest",
+export function waitForScrollEnd(): Promise<void> {
+  return new Promise((resolve) => {
+    let lastScrollY = window.scrollY;
+    let stable = 0;
+
+    const check = () => {
+      if (window.scrollY === lastScrollY) {
+        stable++;
+        if (stable >= 3) {
+          resolve();
+          return;
+        }
+      } else {
+        stable = 0;
+        lastScrollY = window.scrollY;
+      }
+      requestAnimationFrame(check);
+    };
+    requestAnimationFrame(check);
   });
+}
+
+export async function scrollAndMeasure(
+  target: HTMLElement,
+  measure: () => void,
+) {
+  document.body.style.overflow = "";
+
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  await waitForScrollEnd();
+
+  measure();
 }
 
 export function getSpotlightRect(element: HTMLElement | null): SpotlightRect | null {
@@ -87,17 +113,28 @@ export function getSpotlightRect(element: HTMLElement | null): SpotlightRect | n
 
   const rect = element.getBoundingClientRect();
 
-  if (rect.width <= 0 || rect.height <= 0) {
+  const zoom =
+    Number.parseFloat(getComputedStyle(document.documentElement).zoom || "1") ||
+    1;
+
+  const adjustedRect = {
+    left: rect.left / zoom,
+    top: rect.top / zoom,
+    width: rect.width / zoom,
+    height: rect.height / zoom,
+  };
+
+  if (adjustedRect.width <= 0 || adjustedRect.height <= 0) {
     return null;
   }
 
   return {
-    x: rect.left - SPOTLIGHT_PADDING,
-    y: rect.top - SPOTLIGHT_PADDING,
-    width: rect.width + SPOTLIGHT_PADDING * 2,
-    height: rect.height + SPOTLIGHT_PADDING * 2,
-    centerX: rect.left + rect.width / 2,
-    centerY: rect.top + rect.height / 2,
+    x: adjustedRect.left - SPOTLIGHT_PADDING,
+    y: adjustedRect.top - SPOTLIGHT_PADDING,
+    width: adjustedRect.width + SPOTLIGHT_PADDING * 2,
+    height: adjustedRect.height + SPOTLIGHT_PADDING * 2,
+    centerX: adjustedRect.left + adjustedRect.width / 2,
+    centerY: adjustedRect.top + adjustedRect.height / 2,
   };
 }
 
@@ -115,7 +152,8 @@ export function getPopoverPosition(
   popoverHeight: number,
 ): PopoverPosition {
   if (!spotlight) {
-    const { width: viewportW, height: viewportH } = getViewportSize();
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
 
     return {
       top: Math.max(
