@@ -22,6 +22,8 @@ import FinanceCharts from "@/components/finance/FinanceCharts";
 import TransactionDrawer from "@/components/finance/TransactionDrawer";
 import WalletDrawer from "@/components/finance/WalletDrawer";
 import Sidebar from "@/components/Sidebar";
+import SidebarInset from "@/components/SidebarInset";
+import { SidebarProvider } from "@/hooks/useSidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -313,10 +315,11 @@ export default function FinancePage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <Sidebar />
+      <SidebarProvider>
+        <div className="min-h-screen bg-background">
+          <Sidebar />
 
-        <main className="pl-72">
+          <SidebarInset className="min-h-screen">
           <div className="mx-auto max-w-7xl px-8 py-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -761,8 +764,8 @@ export default function FinancePage() {
               </div>
             </section>
           </div>
-        </main>
-      </div>
+          </SidebarInset>
+        </div>
 
       <WalletDrawer
         open={walletDrawerOpen}
@@ -790,6 +793,7 @@ export default function FinancePage() {
         wallets={wallets}
         onImport={handleCsvImport}
       />
+      </SidebarProvider>
     </AuthGuard>
   );
 }

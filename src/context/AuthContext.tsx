@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   isSignInWithEmailLink,
+  GoogleAuthProvider,
   onAuthStateChanged,
   sendSignInLinkToEmail,
   signInWithEmailLink,
@@ -17,6 +18,7 @@ import {
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { saveGoogleIntegration } from "@/lib/firestore";
 
 export const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
 
@@ -32,6 +34,7 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   sendMagicLink: (email: string) => Promise<void>;
   completeMagicLinkSignIn: (email: string, url: string) => Promise<void>;
+  connectGoogleContacts: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -54,12 +57,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
+  const persistGoogleAccessToken = async (
+    firebaseUser: User,
+    accessToken: string | undefined,
+  ) => {
+    if (!accessToken) return;
+
+    await saveGoogleIntegration(firebaseUser.uid, {
+      accessToken,
+      connectedAt: new Date().toISOString(),
+    });
+  };
+
+  const connectGoogleContacts = async (): Promise<string | null> => {
+    if (!auth) {
+      throw new Error("Firebase is not configured. Add credentials to .env.local.");
+    }
+
+    const result = await signInWithPopup(auth, googleProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    const accessToken = credential?.accessToken ?? null;
+
+    if (result.user && accessToken) {
+      await persistGoogleAccessToken(result.user, accessToken);
+    }
+
+    return accessToken;
+  };
+
   const signIn = async () => {
     if (!auth) {
       throw new Error("Firebase is not configured. Add credentials to .env.local.");
     }
 
-    await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    await persistGoogleAccessToken(
+      result.user,
+      credential?.accessToken,
+    );
   };
 
   const signOut = async () => {
@@ -99,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         sendMagicLink,
         completeMagicLinkSignIn,
+        connectGoogleContacts,
       }}
     >
       {children}

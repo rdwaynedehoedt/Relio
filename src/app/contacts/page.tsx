@@ -18,6 +18,8 @@ import ContactDetail from "@/components/ContactDetail";
 import ContactDrawer from "@/components/ContactDrawer";
 import { PanelDeleteDialog } from "@/components/crm-panel";
 import Sidebar from "@/components/Sidebar";
+import SidebarInset from "@/components/SidebarInset";
+import { SidebarProvider } from "@/hooks/useSidebar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -561,19 +563,25 @@ function ContactsPageContent() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <Sidebar />
+      <SidebarProvider>
+        <div className="fixed inset-0 bg-background">
+          <Sidebar />
 
-        <main className="h-screen overflow-hidden pl-72">
-          <div className="flex h-full min-h-0 overflow-hidden">
+          <SidebarInset
+            mode="fixed"
+            className="fixed inset-y-0 right-0 flex flex-col overflow-hidden"
+          >
+          <div className="flex min-h-0 flex-1 overflow-hidden">
             <section
               className={cn(
-                "flex h-full min-h-0 flex-col bg-background transition-all duration-300 ease-out",
-                selectedContact ? "w-[58%] border-r border-border/50" : "w-full",
+                "flex min-h-0 flex-col overflow-hidden bg-background transition-all duration-300 ease-out",
+                selectedContact
+                  ? "w-[58%] shrink-0 border-r border-border/50"
+                  : "min-w-0 flex-1",
               )}
               onClick={handleLeftPanelClick}
             >
-              <div className="px-6 pt-5">
+              <div className="shrink-0 px-6 pt-5">
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
@@ -651,7 +659,7 @@ function ContactsPageContent() {
               </div>
 
               <div
-                className="flex items-center gap-1.5 px-6 py-2"
+                className="flex shrink-0 items-center gap-1.5 px-6 py-2"
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="relative max-w-sm flex-1">
@@ -685,7 +693,7 @@ function ContactsPageContent() {
               </div>
 
               <div
-                className="flex flex-wrap items-center gap-1.5 px-6 pb-2"
+                className="flex shrink-0 flex-wrap items-center gap-1.5 px-6 pb-2"
                 onClick={(event) => event.stopPropagation()}
               >
                 <HubSpotFilterPill
@@ -749,7 +757,7 @@ function ContactsPageContent() {
 
               {checkedIds.size > 0 ? (
                 <div
-                  className="flex items-center justify-between border-y border-border/40 bg-muted/20 px-6 py-2"
+                  className="flex shrink-0 items-center justify-between border-y border-border/40 bg-muted/20 px-6 py-2"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -947,7 +955,7 @@ function ContactsPageContent() {
             </section>
 
             {selectedContact ? (
-              <section className="min-w-0 flex-1 animate-in slide-in-from-right-4 border-l border-border/50 bg-background duration-300">
+              <section className="min-w-0 flex-1 overflow-hidden bg-background animate-in slide-in-from-right-4 border-l border-border/50 duration-300">
                 <ContactDetail
                   contact={selectedContact}
                   onUpdate={handleInlineUpdate}
@@ -958,8 +966,8 @@ function ContactsPageContent() {
               </section>
             ) : null}
           </div>
-        </main>
-      </div>
+          </SidebarInset>
+        </div>
 
       <ContactDrawer
         open={drawerOpen}
@@ -991,6 +999,7 @@ function ContactsPageContent() {
         deleting={bulkDeleting}
         onConfirm={() => void handleBulkDelete()}
       />
+      </SidebarProvider>
     </AuthGuard>
   );
 }

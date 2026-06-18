@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import Sidebar from "@/components/Sidebar";
+import SidebarInset from "@/components/SidebarInset";
+import { SidebarProvider } from "@/hooks/useSidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { getInitials } from "@/lib/contact-utils";
@@ -151,10 +153,11 @@ export default function DashboardPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <Sidebar />
+      <SidebarProvider>
+        <div className="min-h-screen bg-background">
+          <Sidebar />
 
-        <main className="pl-72">
+          <SidebarInset className="min-h-screen">
           <div className="mx-auto max-w-7xl px-8 py-8">
             {/* Section 1 — Morning Briefing */}
             <section className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
@@ -384,8 +387,9 @@ export default function DashboardPage() {
               </div>
             </section>
           </div>
-        </main>
-      </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
     </AuthGuard>
   );
 }

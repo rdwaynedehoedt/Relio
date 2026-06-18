@@ -21,6 +21,8 @@ import {
 import AuthGuard from "@/components/AuthGuard";
 import HubSpotLogo from "@/components/HubSpotLogo";
 import Sidebar from "@/components/Sidebar";
+import SidebarInset from "@/components/SidebarInset";
+import { SidebarProvider } from "@/hooks/useSidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -105,10 +107,11 @@ function SettingsPageContent() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <Sidebar />
+      <SidebarProvider>
+        <div className="min-h-screen bg-background">
+          <Sidebar />
 
-        <main className="pl-72">
+          <SidebarInset className="min-h-screen">
           <div className="mx-auto max-w-5xl px-10 py-12">
             <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-8 py-8 shadow-sm">
               <div className="pointer-events-none absolute -top-24 -right-16 size-64 rounded-full bg-gradient-to-br from-muted via-transparent to-transparent" />
@@ -178,8 +181,9 @@ function SettingsPageContent() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
     </AuthGuard>
   );
 }

@@ -20,6 +20,8 @@ import type {
   Contact,
   FixedDeposit,
   HubSpotIntegration,
+  GoogleIntegration,
+  FileImportIntegration,
   Transaction,
   TransactionFilters,
   UserPreferences,
@@ -315,6 +317,125 @@ export async function updateHubSpotLastSynced(userId: string): Promise<void> {
     { lastSyncedAt: new Date().toISOString() },
     { merge: true },
   );
+}
+
+export async function saveGoogleIntegration(
+  userId: string,
+  integration: GoogleIntegration,
+): Promise<GoogleIntegration> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await setDoc(
+    doc(db, "users", userId, "integrations", "google"),
+    integration,
+    { merge: true },
+  );
+
+  return integration;
+}
+
+export async function getGoogleIntegration(
+  userId: string,
+): Promise<GoogleIntegration | null> {
+  if (!db) return null;
+
+  const snapshot = await getDoc(
+    doc(db, "users", userId, "integrations", "google"),
+  );
+
+  if (!snapshot.exists()) return null;
+
+  return snapshot.data() as GoogleIntegration;
+}
+
+export async function updateGoogleLastSynced(
+  userId: string,
+  importCount: number,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await setDoc(
+    doc(db, "users", userId, "integrations", "google"),
+    {
+      lastSyncedAt: new Date().toISOString(),
+      lastImportCount: importCount,
+    },
+    { merge: true },
+  );
+}
+
+export async function updateFileImportMeta(
+  userId: string,
+  provider: "linkedin" | "vcf",
+  importCount: number,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await setDoc(
+    doc(db, "users", userId, "integrations", provider),
+    {
+      lastSyncedAt: new Date().toISOString(),
+      lastImportCount: importCount,
+    },
+    { merge: true },
+  );
+}
+
+export async function getFileImportMeta(
+  userId: string,
+  provider: "linkedin" | "vcf",
+): Promise<FileImportIntegration | null> {
+  if (!db) return null;
+
+  const snapshot = await getDoc(
+    doc(db, "users", userId, "integrations", provider),
+  );
+
+  if (!snapshot.exists()) return null;
+
+  return snapshot.data() as FileImportIntegration;
+}
+
+export async function getContactByEmail(
+  userId: string,
+  email: string,
+): Promise<Contact | null> {
+  if (!db || !email.trim()) return null;
+
+  const normalized = email.trim().toLowerCase();
+
+  const snapshot = await getDocs(
+    query(
+      collection(db, "contacts"),
+      where("userId", "==", userId),
+      where("email", "==", normalized),
+    ),
+  );
+
+  if (snapshot.empty) return null;
+
+  const docSnap = snapshot.docs[0];
+  return parseContact(docSnap);
+}
+
+export async function getContactByGoogleId(
+  userId: string,
+  googleId: string,
+): Promise<Contact | null> {
+  if (!db || !googleId.trim()) return null;
+
+  const snapshot = await getDocs(
+    query(
+      collection(db, "contacts"),
+      where("userId", "==", userId),
+      where("googleId", "==", googleId),
+    ),
+  );
+
+  if (snapshot.empty) return null;
+
+  const docSnap = snapshot.docs[0];
+  return parseContact(docSnap);
 }
 
 export async function saveUserPreferences(

@@ -42,5 +42,9 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
 googleProvider.addScope("profile");
 googleProvider.addScope("email");
+googleProvider.addScope("https://www.googleapis.com/auth/contacts.readonly");
+
+export const GOOGLE_CONTACTS_SCOPE =
+  "https://www.googleapis.com/auth/contacts.readonly";
 
 export { getAuth };

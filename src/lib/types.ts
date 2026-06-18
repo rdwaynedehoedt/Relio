@@ -25,8 +25,9 @@ export interface Contact {
   annualRevenue?: string;
   numberOfEmployees?: string;
   lastInteractionDate?: string;
-  source?: "manual" | "hubspot";
+  source?: "manual" | "hubspot" | "google" | "linkedin" | "vcf";
   hubspotId?: string;
+  googleId?: string;
   createdAt?: string;
   updatedAt?: string;
   userId: string;
@@ -123,6 +124,9 @@ export type ActivityType =
   | "transaction_added"
   | "fd_added"
   | "hubspot_import"
+  | "google_import"
+  | "linkedin_import"
+  | "vcf_import"
   | "transactions_imported";
 
 export interface Activity {
@@ -143,6 +147,56 @@ export interface HubSpotIntegration {
   token: string;
   connectedAt: string;
   lastSyncedAt?: string;
+}
+
+export interface GoogleIntegration {
+  accessToken: string;
+  connectedAt: string;
+  lastSyncedAt?: string;
+  lastImportCount?: number;
+}
+
+export interface FileImportIntegration {
+  lastSyncedAt?: string;
+  lastImportCount?: number;
+}
+
+export interface GoogleImportContact {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: string;
+  companyName: string;
+  city: string;
+  country: string;
+  notes: string;
+  source: "google";
+  googleId: string;
+}
+
+export interface LinkedInImportContact {
+  firstName: string;
+  lastName: string;
+  email: string;
+  companyName: string;
+  role: string;
+  lastInteractionDate: string;
+  source: "linkedin";
+}
+
+export interface VcfImportContact {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: string;
+  companyName: string;
+  city: string;
+  country: string;
+  linkedInUrl: string;
+  notes: string;
+  source: "vcf";
 }
 
 export interface HubSpotImportContact {

@@ -14,6 +14,8 @@ import CompanyDrawer from "@/components/CompanyDrawer";
 import CompanyLogo from "@/components/CompanyLogo";
 import { PanelDeleteDialog } from "@/components/crm-panel";
 import Sidebar from "@/components/Sidebar";
+import SidebarInset from "@/components/SidebarInset";
+import { SidebarProvider } from "@/hooks/useSidebar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -323,19 +325,25 @@ export default function CompaniesPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <Sidebar />
+      <SidebarProvider>
+        <div className="fixed inset-0 bg-background">
+          <Sidebar />
 
-        <main className="h-screen overflow-hidden pl-72">
-          <div className="flex h-full min-h-0 overflow-hidden">
+          <SidebarInset
+            mode="fixed"
+            className="fixed inset-y-0 right-0 flex flex-col overflow-hidden"
+          >
+          <div className="flex min-h-0 flex-1 overflow-hidden">
             <section
               className={cn(
-                "flex h-full min-h-0 flex-col bg-background transition-all duration-300 ease-out",
-                selectedCompany ? "w-[58%] border-r border-border/50" : "w-full",
+                "flex min-h-0 flex-col overflow-hidden bg-background transition-all duration-300 ease-out",
+                selectedCompany
+                  ? "w-[58%] shrink-0 border-r border-border/50"
+                  : "min-w-0 flex-1",
               )}
               onClick={handleLeftPanelClick}
             >
-              <div className="px-6 pt-5">
+              <div className="shrink-0 px-6 pt-5">
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
@@ -350,7 +358,7 @@ export default function CompaniesPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 px-6 py-2">
+              <div className="flex shrink-0 items-center gap-1.5 px-6 py-2">
                 <div className="relative max-w-sm flex-1">
                   <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
                   <Input
@@ -376,7 +384,7 @@ export default function CompaniesPage() {
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 px-6 pb-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-1.5 px-6 pb-2">
                 <FilterPill
                   label="Industry"
                   value={industryFilter}
@@ -395,7 +403,7 @@ export default function CompaniesPage() {
 
               {checkedIds.size > 0 ? (
                 <div
-                  className="flex items-center justify-between border-y border-border/40 bg-muted/20 px-6 py-2"
+                  className="flex shrink-0 items-center justify-between border-y border-border/40 bg-muted/20 px-6 py-2"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <span className="text-xs text-muted-foreground">
@@ -592,7 +600,7 @@ export default function CompaniesPage() {
             </section>
 
             {selectedCompany ? (
-              <section className="min-w-0 flex-1 animate-in slide-in-from-right-4 border-l border-border/50 bg-background duration-300">
+              <section className="min-w-0 flex-1 overflow-hidden bg-background animate-in slide-in-from-right-4 border-l border-border/50 duration-300">
                 <CompanyDetail
                   company={selectedCompany}
                   contacts={contacts}
@@ -604,8 +612,8 @@ export default function CompaniesPage() {
               </section>
             ) : null}
           </div>
-        </main>
-      </div>
+          </SidebarInset>
+        </div>
 
       <CompanyDrawer
         open={drawerOpen}
@@ -637,6 +645,7 @@ export default function CompaniesPage() {
         deleting={bulkDeleting}
         onConfirm={() => void handleBulkDelete()}
       />
+      </SidebarProvider>
     </AuthGuard>
   );
 }
