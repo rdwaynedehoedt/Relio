@@ -38,13 +38,16 @@ const app: FirebaseApp | null = isFirebaseConfigured ? getFirebaseApp() : null;
 export const auth: Auth | null = app ? getAuth(app) : null;
 export const db: Firestore | null = app ? getFirestore(app) : null;
 
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: "select_account" });
-googleProvider.addScope("profile");
-googleProvider.addScope("email");
-googleProvider.addScope("https://www.googleapis.com/auth/contacts.readonly");
-
 export const GOOGLE_CONTACTS_SCOPE =
   "https://www.googleapis.com/auth/contacts.readonly";
+
+/** Basic Google sign-in only — no contacts or other sensitive scopes. */
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: "select_account" });
+
+/** Used only when the user explicitly connects Google Contacts in Settings. */
+export const googleContactsProvider = new GoogleAuthProvider();
+googleContactsProvider.setCustomParameters({ prompt: "consent" });
+googleContactsProvider.addScope(GOOGLE_CONTACTS_SCOPE);
 
 export { getAuth };

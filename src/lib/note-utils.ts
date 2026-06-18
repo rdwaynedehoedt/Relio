@@ -1,4 +1,4 @@
-import type { Note, NoteType } from "@/lib/types";
+import type { Note, NoteMood, NoteType } from "@/lib/types";
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
@@ -38,32 +38,58 @@ export const NOTE_TYPE_ICONS: Record<NoteType, LucideIcon> = {
 
 export const NOTE_TYPE_STYLES: Record<
   NoteType,
-  { badge: string; border: string }
+  { badge: string; border: string; card: string }
 > = {
   idea: {
-    badge: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
-    border: "border-violet-500/20",
+    badge: "bg-violet-500/15 text-violet-800 dark:text-violet-300",
+    border: "border-violet-500/30",
+    card: "bg-violet-500/[0.07] dark:bg-violet-500/[0.12]",
   },
   article: {
-    badge: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
-    border: "border-blue-500/20",
+    badge: "bg-blue-500/15 text-blue-800 dark:text-blue-300",
+    border: "border-blue-500/30",
+    card: "bg-blue-500/[0.07] dark:bg-blue-500/[0.12]",
   },
   meeting: {
-    badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    border: "border-emerald-500/20",
+    badge: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
+    border: "border-emerald-500/30",
+    card: "bg-emerald-500/[0.07] dark:bg-emerald-500/[0.12]",
   },
   decision: {
-    badge: "bg-orange-500/10 text-orange-700 dark:text-orange-300",
-    border: "border-orange-500/20",
+    badge: "bg-orange-500/15 text-orange-800 dark:text-orange-300",
+    border: "border-orange-500/30",
+    card: "bg-orange-500/[0.07] dark:bg-orange-500/[0.12]",
   },
   goal: {
-    badge: "bg-amber-500/10 text-amber-800 dark:text-amber-300",
-    border: "border-amber-500/20",
+    badge: "bg-amber-500/15 text-amber-900 dark:text-amber-300",
+    border: "border-amber-500/30",
+    card: "bg-amber-500/[0.07] dark:bg-amber-500/[0.12]",
   },
   random: {
     badge: "bg-muted text-muted-foreground",
-    border: "border-border/60",
+    border: "border-border/70",
+    card: "bg-muted/40 dark:bg-muted/25",
   },
+};
+
+export const NOTE_MOODS: {
+  value: NoteMood;
+  emoji: string;
+  label: string;
+}[] = [
+  { value: "excited", emoji: "🔥", label: "Excited" },
+  { value: "inspired", emoji: "💡", label: "Inspired" },
+  { value: "unsure", emoji: "🤔", label: "Unsure" },
+  { value: "urgent", emoji: "⚡", label: "Urgent" },
+  { value: "calm", emoji: "😌", label: "Calm" },
+];
+
+export const NOTE_MOOD_EMOJI: Record<NoteMood, string> = {
+  excited: "🔥",
+  inspired: "💡",
+  unsure: "🤔",
+  urgent: "⚡",
+  calm: "😌",
 };
 
 export type NoteFilter = "all" | NoteType;
@@ -133,6 +159,8 @@ export function getFaviconUrl(url?: string): string {
 export type NoteFormValues = {
   title: string;
   body: string;
+  bodyHtml: string;
+  mood?: NoteMood;
   type: NoteType;
   tags: string[];
   url: string;
@@ -145,6 +173,8 @@ export type NoteFormValues = {
 export const emptyNoteForm = (): NoteFormValues => ({
   title: "",
   body: "",
+  bodyHtml: "",
+  mood: undefined,
   type: "idea",
   tags: [],
   url: "",
@@ -154,10 +184,39 @@ export const emptyNoteForm = (): NoteFormValues => ({
   isPinned: false,
 });
 
+export function stripHtml(html: string): string {
+  if (!html) return "";
+
+  if (typeof document !== "undefined") {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
+  }
+
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function noteBodyToHtml(note: Note): string {
+  if (note.bodyHtml) return note.bodyHtml;
+  if (!note.body) return "";
+
+  return note.body
+    .split("\n")
+    .filter((line) => line.length > 0)
+    .map((line) => `<p>${line.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
+    .join("");
+}
+
 export function noteToFormValues(note: Note): NoteFormValues {
+  const bodyHtml = noteBodyToHtml(note);
+
   return {
     title: note.title,
-    body: note.body,
+    body: note.body || stripHtml(bodyHtml),
+    bodyHtml,
+    mood: note.mood,
     type: note.type,
     tags: note.tags ?? [],
     url: note.url ?? "",

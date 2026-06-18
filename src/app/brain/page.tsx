@@ -10,12 +10,13 @@ import {
   Flag,
   Lightbulb,
   Pencil,
-  Pin,
   Plus,
   Scale,
   Search,
+  Star,
   Trash2,
 } from "lucide-react";
+import Masonry from "react-masonry-css";
 import AuthGuard from "@/components/AuthGuard";
 import NoteDrawer from "@/components/NoteDrawer";
 import Sidebar from "@/components/Sidebar";
@@ -28,9 +29,11 @@ import {
   filterNotes,
   getFaviconUrl,
   getUrlDomain,
+  NOTE_MOOD_EMOJI,
   NOTE_TYPE_ICONS,
   NOTE_TYPE_LABELS,
   NOTE_TYPE_STYLES,
+  stripHtml,
   type NoteFilter,
   type NoteFormValues,
   sortNotes,
@@ -56,6 +59,12 @@ const EMPTY_STATE_ICONS: Record<NoteType, typeof Lightbulb> = {
   decision: Scale,
   goal: Flag,
   random: CircleDot,
+};
+
+const MASONRY_BREAKPOINTS = {
+  default: 3,
+  1024: 2,
+  640: 1,
 };
 
 export default function BrainPage() {
@@ -121,10 +130,12 @@ export default function BrainPage() {
     const payload = {
       title: values.title,
       body: values.body,
+      bodyHtml: values.bodyHtml,
       type: values.type,
       tags: values.tags,
       isPinned: values.isPinned,
       userId: user.uid,
+      ...(values.mood ? { mood: values.mood } : {}),
       ...(hasUrl
         ? {
             url: values.url.trim(),
@@ -138,7 +149,10 @@ export default function BrainPage() {
     };
 
     if (drawerMode === "edit" && selectedNote?.id) {
-      await updateNote(selectedNote.id, payload, { clearUrlFields: !hasUrl });
+      await updateNote(selectedNote.id, payload, {
+        clearUrlFields: !hasUrl,
+        clearMood: !values.mood && Boolean(selectedNote.mood),
+      });
       setNotes((current) =>
         sortNotes(
           current.map((note) =>
@@ -146,6 +160,7 @@ export default function BrainPage() {
               ? {
                   ...note,
                   ...payload,
+                  mood: values.mood,
                   updatedAt: new Date().toISOString(),
                 }
               : note,
@@ -269,18 +284,23 @@ export default function BrainPage() {
                   )}
                 </div>
               ) : (
-                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <Masonry
+                  breakpointCols={MASONRY_BREAKPOINTS}
+                  className="-ml-4 mt-6 flex w-auto"
+                  columnClassName="pl-4 bg-clip-padding"
+                >
                   {filteredNotes.map((note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      isHovered={hoveredId === note.id}
-                      onHover={setHoveredId}
-                      onOpen={() => openEditDrawer(note)}
-                      onDelete={() => note.id && void handleDelete(note.id)}
-                    />
+                    <div key={note.id} className="mb-4">
+                      <NoteCard
+                        note={note}
+                        isHovered={hoveredId === note.id}
+                        onHover={setHoveredId}
+                        onOpen={() => openEditDrawer(note)}
+                        onDelete={() => note.id && void handleDelete(note.id)}
+                      />
+                    </div>
                   ))}
-                </div>
+                </Masonry>
               )}
             </div>
           </SidebarInset>
@@ -315,13 +335,17 @@ function NoteCard({
   const TypeIcon = NOTE_TYPE_ICONS[note.type];
   const styles = NOTE_TYPE_STYLES[note.type];
   const domain = getUrlDomain(note.url);
+  const previewText =
+    note.body?.trim() ||
+    (note.bodyHtml ? stripHtml(note.bodyHtml) : "");
 
   return (
     <article
       className={cn(
-        "group relative flex cursor-pointer flex-col rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md",
+        "group relative flex cursor-pointer flex-col rounded-2xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+        styles.card,
         styles.border,
-        note.isPinned && "ring-1 ring-amber-500/20",
+        note.isPinned && "ring-1 ring-amber-500/25",
       )}
       onMouseEnter={() => onHover(note.id ?? null)}
       onMouseLeave={() => onHover(null)}
@@ -346,23 +370,34 @@ function NoteCard({
           {NOTE_TYPE_LABELS[note.type]}
         </span>
 
-        {note.isPinned ? (
-          <Pin className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-        ) : null}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {note.mood ? (
+            <span
+              className="text-sm leading-none"
+              title={note.mood}
+              aria-label={`Mood: ${note.mood}`}
+            >
+              {NOTE_MOOD_EMOJI[note.mood]}
+            </span>
+          ) : null}
+          {note.isPinned ? (
+            <Star className="size-3.5 fill-amber-500 text-amber-500" />
+          ) : null}
+        </div>
       </div>
 
-      <h3 className="mt-3 line-clamp-2 text-base font-medium text-foreground">
+      <h3 className="mt-3 line-clamp-2 text-base font-bold text-foreground">
         {note.title || "Untitled note"}
       </h3>
 
-      {note.body ? (
-        <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-          {note.body}
+      {previewText ? (
+        <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-muted-foreground">
+          {previewText}
         </p>
       ) : null}
 
       {note.type === "article" && note.url ? (
-        <div className="mt-4 overflow-hidden rounded-xl border border-border/50 bg-muted/20">
+        <div className="mt-4 overflow-hidden rounded-xl border border-border/40 bg-background/40">
           {note.urlImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -387,10 +422,10 @@ function NoteCard({
 
       {note.tags && note.tags.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-1.5">
-          {note.tags.slice(0, 4).map((tag) => (
+          {note.tags.slice(0, 5).map((tag) => (
             <span
               key={tag}
-              className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-foreground"
+              className="rounded-full border border-border/40 bg-background/50 px-2 py-0.5 text-[11px] text-foreground"
             >
               {tag}
             </span>
@@ -398,7 +433,7 @@ function NoteCard({
         </div>
       ) : null}
 
-      <div className="mt-4 flex items-end justify-between gap-3">
+      <div className="mt-4 flex items-end justify-end">
         <span className="text-[11px] text-muted-foreground/80">
           {note.createdAt
             ? format(parseISO(note.createdAt), "MMM d, yyyy")
@@ -408,7 +443,7 @@ function NoteCard({
 
       <div
         className={cn(
-          "absolute top-4 right-4 flex items-center gap-1 transition-opacity",
+          "absolute right-4 bottom-12 flex items-center gap-1 transition-opacity",
           isHovered ? "opacity-100" : "opacity-0",
         )}
         onClick={(event) => event.stopPropagation()}
@@ -416,7 +451,7 @@ function NoteCard({
         <button
           type="button"
           onClick={onOpen}
-          className="flex size-8 items-center justify-center rounded-lg bg-background/90 text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+          className="flex size-8 items-center justify-center rounded-lg border border-border/50 bg-background/95 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:text-foreground"
           aria-label="Edit note"
         >
           <Pencil className="size-3.5" />
@@ -424,7 +459,7 @@ function NoteCard({
         <button
           type="button"
           onClick={onDelete}
-          className="flex size-8 items-center justify-center rounded-lg bg-background/90 text-muted-foreground shadow-sm transition-colors hover:text-destructive"
+          className="flex size-8 items-center justify-center rounded-lg border border-border/50 bg-background/95 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:text-destructive"
           aria-label="Delete note"
         >
           <Trash2 className="size-3.5" />

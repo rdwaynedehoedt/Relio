@@ -145,11 +145,15 @@ export type NoteType =
   | "goal"
   | "random";
 
+export type NoteMood = "excited" | "inspired" | "unsure" | "urgent" | "calm";
+
 export interface Note {
   id?: string;
   userId: string;
   title: string;
   body: string;
+  bodyHtml?: string;
+  mood?: NoteMood;
   type: NoteType;
   tags?: string[];
   url?: string;

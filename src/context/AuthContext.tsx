@@ -17,7 +17,7 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth, googleContactsProvider, googleProvider } from "@/lib/firebase";
 import { saveGoogleIntegration } from "@/lib/firestore";
 
 export const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Firebase is not configured. Add credentials to .env.local.");
     }
 
-    const result = await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleContactsProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     const accessToken = credential?.accessToken ?? null;
 
@@ -90,12 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Firebase is not configured. Add credentials to .env.local.");
     }
 
-    const result = await signInWithPopup(auth, googleProvider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    await persistGoogleAccessToken(
-      result.user,
-      credential?.accessToken,
-    );
+    await signInWithPopup(auth, googleProvider);
   };
 
   const signOut = async () => {

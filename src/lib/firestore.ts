@@ -769,7 +769,7 @@ export async function addNote(
 export async function updateNote(
   id: string,
   data: Partial<Note>,
-  options?: { clearUrlFields?: boolean },
+  options?: { clearUrlFields?: boolean; clearMood?: boolean },
 ): Promise<void> {
   if (!db) throw new Error("Firestore is not configured.");
 
@@ -785,6 +785,10 @@ export async function updateNote(
     payload.urlTitle = deleteField();
     payload.urlDescription = deleteField();
     payload.urlImage = deleteField();
+  }
+
+  if (options?.clearMood) {
+    payload.mood = deleteField();
   }
 
   await updateDoc(doc(db, "notes", id), payload);

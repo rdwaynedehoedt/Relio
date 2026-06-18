@@ -145,3 +145,79 @@
     letter-spacing: -0.02em;
   }
 }
+
+@layer components {
+  .note-editor .note-editor-content {
+    @apply min-h-full text-[15px] leading-[1.7] text-foreground sm:text-base;
+  }
+
+  .note-editor .tiptap {
+    @apply min-h-full outline-none;
+  }
+
+  .note-editor .note-editor-content p.is-editor-empty:first-child::before,
+  .note-editor .note-editor-content p.is-empty::before {
+    @apply pointer-events-none float-left h-0 text-muted-foreground/50;
+    content: attr(data-placeholder);
+  }
+
+  .note-editor .note-editor-content h1 {
+    @apply mt-4 mb-2 text-2xl font-semibold tracking-tight first:mt-0;
+  }
+
+  .note-editor .note-editor-content h2 {
+    @apply mt-4 mb-2 text-xl font-semibold tracking-tight first:mt-0;
+  }
+
+  .note-editor .note-editor-content h3 {
+    @apply mt-3 mb-1.5 text-lg font-medium first:mt-0;
+  }
+
+  .note-editor .note-editor-content p {
+    @apply my-1.5;
+  }
+
+  .note-editor .note-editor-content ul:not([data-type="taskList"]) {
+    @apply my-2 list-disc pl-5;
+  }
+
+  .note-editor .note-editor-content ol {
+    @apply my-2 list-decimal pl-5;
+  }
+
+  .note-editor .note-editor-content blockquote {
+    @apply my-3 border-l-2 border-border pl-4 text-muted-foreground italic;
+  }
+
+  .note-editor .note-editor-content pre {
+    @apply my-3 overflow-x-auto rounded-lg bg-muted/60 px-3 py-2 font-mono text-sm;
+  }
+
+  .note-editor .note-editor-content code {
+    @apply rounded bg-muted/60 px-1 py-0.5 font-mono text-[0.9em];
+  }
+
+  .note-editor .note-editor-content mark {
+    @apply rounded-sm bg-amber-200/80 px-0.5 text-foreground dark:bg-amber-500/30;
+  }
+
+  .note-editor .note-editor-content hr {
+    @apply my-4 border-border/60;
+  }
+
+  .note-editor .note-editor-content ul[data-type="taskList"] {
+    @apply my-2 list-none pl-0;
+  }
+
+  .note-editor .note-editor-content ul[data-type="taskList"] li {
+    @apply flex items-start gap-2;
+  }
+
+  .note-editor .note-editor-content ul[data-type="taskList"] li > label {
+    @apply mt-1 flex shrink-0;
+  }
+
+  .note-editor .note-editor-content ul[data-type="taskList"] li > label input {
+    @apply size-3.5 rounded border-border accent-foreground;
+  }
+}
