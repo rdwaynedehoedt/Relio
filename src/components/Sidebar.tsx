@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  Briefcase,
   Building2,
   ChevronRight,
   LayoutDashboard,
@@ -197,6 +198,7 @@ function SidebarShell() {
           ) : (
             <NavGroup
               label="CRM"
+              icon={Briefcase}
               isOpen={crmOpen}
               isActive={crmIsActive}
               onToggle={() => setCrmOpen((open) => !open)}
@@ -216,7 +218,7 @@ function SidebarShell() {
                         : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
                     )}
                   >
-                    <Icon className="size-4 shrink-0" />
+                    <Icon className="size-[18px] shrink-0" />
                     {label}
                   </Link>
                 );
@@ -224,17 +226,18 @@ function SidebarShell() {
             </NavGroup>
           )}
 
-          <div className={cn("pt-1", isCollapsed ? "flex justify-center" : "")}>
-            <SidebarNavLink
-              href="/settings"
-              label="Settings"
-              icon={Settings}
-              isActive={isActivePath(pathname, "/settings")}
-              collapsed={isCollapsed}
-              onNavigate={handleNavigate}
-            />
-          </div>
         </nav>
+
+        <div className={cn("mt-auto shrink-0 space-y-1 pb-2", railPadding)}>
+          <SidebarNavLink
+            href="/settings"
+            label="Settings"
+            icon={Settings}
+            isActive={isActivePath(pathname, "/settings")}
+            collapsed={isCollapsed}
+            onNavigate={handleNavigate}
+          />
+        </div>
 
         {!isMobile ? (
           <div className={cn("shrink-0 pb-2", railPadding)}>
@@ -328,12 +331,14 @@ export default function Sidebar() {
 
 function NavGroup({
   label,
+  icon: Icon,
   isOpen,
   isActive,
   onToggle,
   children,
 }: {
   label: string;
+  icon: React.ComponentType<{ className?: string }>;
   isOpen: boolean;
   isActive: boolean;
   onToggle: () => void;
@@ -345,18 +350,13 @@ function NavGroup({
         type="button"
         onClick={onToggle}
         className={cn(
-          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[15px] font-semibold transition-colors",
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[15px] font-medium transition-colors",
           isActive || isOpen
             ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
+            : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
         )}
       >
-        <span
-          className={cn(
-            "size-2 shrink-0 rounded-full",
-            isActive || isOpen ? "bg-sidebar-foreground" : "bg-muted-foreground",
-          )}
-        />
+        <Icon className="size-[18px] shrink-0" />
         <span className="flex-1">{label}</span>
         <ChevronRight
           className={cn(

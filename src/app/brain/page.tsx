@@ -117,21 +117,28 @@ export default function BrainPage() {
   async function handleSave(values: NoteFormValues) {
     if (!user) return;
 
+    const hasUrl = Boolean(values.url.trim());
     const payload = {
       title: values.title,
       body: values.body,
       type: values.type,
       tags: values.tags,
-      url: values.url || undefined,
-      urlTitle: values.urlTitle || undefined,
-      urlDescription: values.urlDescription || undefined,
-      urlImage: values.urlImage || undefined,
       isPinned: values.isPinned,
       userId: user.uid,
+      ...(hasUrl
+        ? {
+            url: values.url.trim(),
+            ...(values.urlTitle.trim() && { urlTitle: values.urlTitle.trim() }),
+            ...(values.urlDescription.trim() && {
+              urlDescription: values.urlDescription.trim(),
+            }),
+            ...(values.urlImage.trim() && { urlImage: values.urlImage.trim() }),
+          }
+        : {}),
     };
 
     if (drawerMode === "edit" && selectedNote?.id) {
-      await updateNote(selectedNote.id, payload);
+      await updateNote(selectedNote.id, payload, { clearUrlFields: !hasUrl });
       setNotes((current) =>
         sortNotes(
           current.map((note) =>

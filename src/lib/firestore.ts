@@ -30,6 +30,12 @@ import type {
 } from "@/lib/types";
 import { filterTransactions } from "@/lib/finance-utils";
 
+function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined),
+  ) as T;
+}
+
 function parseContact(docSnap: { id: string; data: () => Record<string, unknown> }): Contact {
   const { leadStatus: _removed, ...data } = docSnap.data();
   return { id: docSnap.id, ...data } as Contact;
@@ -743,11 +749,14 @@ export async function addNote(
   if (!db) throw new Error("Firestore is not configured.");
 
   const now = new Date().toISOString();
-  const docRef = await addDoc(collection(db, "notes"), {
-    ...note,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const docRef = await addDoc(
+    collection(db, "notes"),
+    omitUndefined({
+      ...note,
+      createdAt: now,
+      updatedAt: now,
+    }),
+  );
 
   return {
     id: docRef.id,
@@ -760,15 +769,25 @@ export async function addNote(
 export async function updateNote(
   id: string,
   data: Partial<Note>,
+  options?: { clearUrlFields?: boolean },
 ): Promise<void> {
   if (!db) throw new Error("Firestore is not configured.");
 
   const { id: _id, createdAt, ...updates } = data;
 
-  await updateDoc(doc(db, "notes", id), {
-    ...updates,
+  const payload: Record<string, unknown> = {
+    ...omitUndefined(updates),
     updatedAt: new Date().toISOString(),
-  });
+  };
+
+  if (options?.clearUrlFields) {
+    payload.url = deleteField();
+    payload.urlTitle = deleteField();
+    payload.urlDescription = deleteField();
+    payload.urlImage = deleteField();
+  }
+
+  await updateDoc(doc(db, "notes", id), payload);
 }
 
 export async function deleteNote(id: string): Promise<void> {
