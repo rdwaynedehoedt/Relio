@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronRight,
   LayoutDashboard,
+  Lightbulb,
   LogOut,
   PanelLeftClose,
   Settings,
@@ -38,6 +39,7 @@ const crmItems = [
 const primaryNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/finance", label: "Finance", icon: Wallet },
+  { href: "/brain", label: "Second Brain", icon: Lightbulb },
 ];
 
 function isActivePath(pathname: string, href: string) {

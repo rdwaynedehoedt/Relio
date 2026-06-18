@@ -6,20 +6,16 @@ import { formatDistanceToNow } from "date-fns";
 import { updateProfile } from "firebase/auth";
 import {
   Check,
-  Eye,
-  EyeOff,
-  ExternalLink,
   Loader2,
   Monitor,
   Moon,
   Palette,
   Plug,
-  RefreshCw,
   Sun,
   User,
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
-import HubSpotLogo from "@/components/HubSpotLogo";
+import IntegrationsPanel from "@/components/IntegrationsPanel";
 import Sidebar from "@/components/Sidebar";
 import SidebarInset from "@/components/SidebarInset";
 import { SidebarProvider } from "@/hooks/useSidebar";
@@ -30,11 +26,6 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { auth } from "@/lib/firebase";
-import {
-  getHubSpotToken,
-  saveHubSpotToken,
-} from "@/lib/firestore";
-import { syncHubSpotData } from "@/lib/hubspot-sync";
 import {
   fetchDetectedCountry,
   getCountryFlag,
@@ -324,219 +315,12 @@ function ProfileSection() {
 }
 
 function IntegrationsSection() {
-  const { user } = useAuth();
-  const [token, setToken] = useState("");
-  const [showToken, setShowToken] = useState(false);
-  const [connectedAt, setConnectedAt] = useState<string | null>(null);
-  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const isConnected = Boolean(token.trim() || connectedAt);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const userId = user.uid;
-
-    async function loadIntegration() {
-      try {
-        const integration = await getHubSpotToken(userId);
-        if (integration) {
-          setToken(integration.token);
-          setConnectedAt(integration.connectedAt);
-          setLastSyncedAt(integration.lastSyncedAt ?? null);
-        }
-      } catch (err) {
-        console.error("Failed to load HubSpot integration:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadIntegration();
-  }, [user]);
-
-  async function handleSaveToken() {
-    if (!user || !token.trim()) return;
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      const integration = await saveHubSpotToken(user.uid, token.trim());
-      setConnectedAt(integration.connectedAt);
-      setSyncStatus(null);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not save HubSpot token.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleSync() {
-    if (!user || !token.trim()) return;
-
-    setSyncing(true);
-    setError(null);
-    setSyncStatus("Connecting to HubSpot...");
-
-    try {
-      const result = await syncHubSpotData(user.uid, token.trim(), setSyncStatus);
-      setLastSyncedAt(result.syncedAt);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sync failed.");
-      setSyncStatus(null);
-    } finally {
-      setSyncing(false);
-    }
-  }
-
   return (
     <SettingsCard
       title="Integrations"
       description="Connect Relio to your existing tools."
     >
-      <div className="rounded-2xl border border-border bg-muted/30 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex min-w-0 flex-1 flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <HubSpotLogo height={30} />
-              {isConnected ? (
-                <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-                  Connected
-                </Badge>
-              ) : (
-                <Badge
-                  variant="secondary"
-                  className="border-border bg-muted text-muted-foreground"
-                >
-                  Not connected
-                </Badge>
-              )}
-            </div>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Import your contacts and companies from HubSpot.
-            </p>
-            <p className="text-xs leading-relaxed text-muted-foreground/80">
-              Relio is independent of HubSpot, Inc. and is not authorized by,
-              endorsed by, sponsored by, affiliated with, or otherwise approved
-              by HubSpot, Inc.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-4">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-foreground">
-              Private App Token
-            </span>
-            <div className="relative">
-              <Input
-                type={showToken ? "text" : "password"}
-                value={token}
-                onChange={(event) => setToken(event.target.value)}
-                placeholder="pat-na1-..."
-                className="h-11 pr-11"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowToken((current) => !current)}
-                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showToken ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Get your token from HubSpot → Settings → Integrations → Private
-              Apps.{" "}
-              <a
-                href="https://app.hubspot.com/private-apps"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-2 hover:underline"
-              >
-                Open HubSpot Private Apps
-                <ExternalLink className="size-3" />
-              </a>
-            </p>
-          </label>
-
-          {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
-
-          {syncStatus ? (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground">
-              {syncing ? (
-                <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
-              ) : (
-                <Check className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-              )}
-              {syncStatus}
-            </div>
-          ) : null}
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              onClick={() => void handleSaveToken()}
-              disabled={saving || !token.trim()}
-              className="h-10"
-            >
-              {saving ? "Saving..." : "Save Token"}
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => void handleSync()}
-              disabled={syncing || !token.trim()}
-              className="h-10"
-            >
-              {syncing ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="size-4" />
-                  Sync Now
-                </>
-              )}
-            </Button>
-          </div>
-
-          {!token.trim() ? (
-            <p className="text-xs text-muted-foreground">
-              Enter your Private App Token above to enable sync.
-            </p>
-          ) : !connectedAt ? (
-            <p className="text-xs text-muted-foreground">
-              Save your token first, then click Sync Now to import contacts and
-              companies.
-            </p>
-          ) : null}
-
-          {lastSyncedAt ? (
-            <p className="text-xs text-muted-foreground">
-              Last synced{" "}
-              {formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}
-            </p>
-          ) : null}
-        </div>
-      </div>
+      <IntegrationsPanel />
     </SettingsCard>
   );
 }

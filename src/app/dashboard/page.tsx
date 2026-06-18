@@ -67,6 +67,9 @@ const ACTIVITY_ICONS: Record<
   transaction_added: ArrowDownRight,
   fd_added: Lock,
   hubspot_import: Download,
+  google_import: Download,
+  linkedin_import: Download,
+  vcf_import: Download,
   transactions_imported: Download,
 };
 

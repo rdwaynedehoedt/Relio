@@ -22,6 +22,7 @@ import type {
   HubSpotIntegration,
   GoogleIntegration,
   FileImportIntegration,
+  Note,
   Transaction,
   TransactionFilters,
   UserPreferences,
@@ -718,4 +719,60 @@ export async function getActivities(
     .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as Activity)
     .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
     .slice(0, limit);
+}
+
+export async function getNotes(userId: string): Promise<Note[]> {
+  if (!db) return [];
+
+  const snapshot = await getDocs(
+    query(collection(db, "notes"), where("userId", "==", userId)),
+  );
+
+  return snapshot.docs
+    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as Note)
+    .sort((a, b) =>
+      (b.updatedAt ?? b.createdAt ?? "").localeCompare(
+        a.updatedAt ?? a.createdAt ?? "",
+      ),
+    );
+}
+
+export async function addNote(
+  note: Omit<Note, "id" | "createdAt" | "updatedAt">,
+): Promise<Note> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const now = new Date().toISOString();
+  const docRef = await addDoc(collection(db, "notes"), {
+    ...note,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return {
+    id: docRef.id,
+    ...note,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export async function updateNote(
+  id: string,
+  data: Partial<Note>,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  const { id: _id, createdAt, ...updates } = data;
+
+  await updateDoc(doc(db, "notes", id), {
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "notes", id));
 }

@@ -137,6 +137,32 @@ export interface Activity {
   createdAt?: string;
 }
 
+export type NoteType =
+  | "idea"
+  | "article"
+  | "meeting"
+  | "decision"
+  | "goal"
+  | "random";
+
+export interface Note {
+  id?: string;
+  userId: string;
+  title: string;
+  body: string;
+  type: NoteType;
+  tags?: string[];
+  url?: string;
+  urlTitle?: string;
+  urlDescription?: string;
+  urlImage?: string;
+  isPinned?: boolean;
+  linkedContactIds?: string[];
+  linkedCompanyIds?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface UserPreferences {
   theme: ThemeMode;
   defaultCountry?: string;
