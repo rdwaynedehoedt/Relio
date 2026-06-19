@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, X } from "lucide-react";
 import CompanyLogo from "@/components/CompanyLogo";
+import CompanyMeetings from "@/components/calendar/CompanyMeetings";
 import {
   PanelDeleteDialog,
   PanelField,
@@ -307,6 +308,8 @@ export default function CompanyDetail({
             })}
           </div>
         )}
+
+        <CompanyMeetings company={currentCompany} />
       </div>
 
       <PanelDeleteDialog

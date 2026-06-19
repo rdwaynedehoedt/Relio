@@ -31,7 +31,13 @@ import {
   storeEmailForSignIn,
 } from "@/lib/auth-utils";
 import { clearAuthCookie, setAuthCookie } from "@/lib/auth-cookie";
+import {
+  getGoogleTokenInfo,
+  integrationScopesFromGoogleScopes,
+  tokenHasCalendarScope,
+} from "@/lib/google-token";
 import { deleteAllUserData, saveGoogleIntegration, syncUserProfile } from "@/lib/firestore";
+import type { GoogleIntegrationScope } from "@/lib/types";
 
 export const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
 
@@ -53,6 +59,8 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+let googleConnectInFlight: Promise<string | null> | null = null;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -90,9 +98,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!accessToken) return;
 
+    const tokenInfo = await getGoogleTokenInfo(accessToken);
+    const scopes: GoogleIntegrationScope[] = tokenInfo.valid
+      ? integrationScopesFromGoogleScopes(tokenInfo.scopes)
+      : ["contacts", "calendar"];
+
     await saveGoogleIntegration(firebaseUser.uid, {
       accessToken,
       connectedAt: new Date().toISOString(),
+      scopes,
     });
   };
 
@@ -101,15 +115,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Firebase is not configured. Add credentials to .env.local.");
     }
 
-    const result = await signInWithPopup(auth, googleContactsProvider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    const accessToken = credential?.accessToken ?? null;
-
-    if (result.user && accessToken) {
-      await persistGoogleAccessToken(result.user, accessToken);
+    if (googleConnectInFlight) {
+      return googleConnectInFlight;
     }
 
-    return accessToken;
+    googleConnectInFlight = (async () => {
+      const currentUser = auth.currentUser;
+      const hasGoogle =
+        currentUser?.providerData.some(
+          (provider) => provider.providerId === "google.com",
+        ) ?? false;
+
+      const result =
+        currentUser && hasGoogle
+          ? await reauthenticateWithPopup(currentUser, googleContactsProvider)
+          : await signInWithPopup(auth, googleContactsProvider);
+
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const accessToken = credential?.accessToken ?? null;
+
+      if (result.user && accessToken) {
+        const tokenInfo = await getGoogleTokenInfo(accessToken);
+
+        if (!tokenInfo.valid) {
+          throw new Error(
+            "Could not verify Google access token. Please try connecting again.",
+          );
+        }
+
+        if (!tokenHasCalendarScope(tokenInfo.scopes)) {
+          throw new Error(
+            "Google Calendar permission was not granted. Reconnect and check all permission boxes, or remove Relio at myaccount.google.com/permissions and try again.",
+          );
+        }
+
+        await persistGoogleAccessToken(result.user, accessToken);
+      }
+
+      return accessToken;
+    })();
+
+    try {
+      return await googleConnectInFlight;
+    } finally {
+      googleConnectInFlight = null;
+    }
   };
 
   const signIn = async () => {

@@ -1,5 +1,8 @@
 import type { Contact } from "@/lib/types";
-import { formatLastActivity } from "@/lib/contact-utils";
+import {
+  formatLastActivity,
+  getContactSourceLabel,
+} from "@/lib/contact-utils";
 
 export type ContactColumnId =
   | "name"
@@ -124,7 +127,7 @@ export function getContactColumnValue(
         contact.lastInteractionDate ?? contact.updatedAt,
       );
     case "source":
-      return contact.source || "";
+      return getContactSourceLabel(contact.source);
     case "annualRevenue":
       return contact.annualRevenue || "";
     case "tags":

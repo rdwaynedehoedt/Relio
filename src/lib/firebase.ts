@@ -41,13 +41,24 @@ export const db: Firestore | null = app ? getFirestore(app) : null;
 export const GOOGLE_CONTACTS_SCOPE =
   "https://www.googleapis.com/auth/contacts.readonly";
 
+export const GOOGLE_CALENDAR_SCOPE =
+  "https://www.googleapis.com/auth/calendar";
+
+export const GOOGLE_CALENDAR_EVENTS_SCOPE =
+  "https://www.googleapis.com/auth/calendar.events";
+
 /** Basic Google sign-in only — no contacts or other sensitive scopes. */
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
 
-/** Used only when the user explicitly connects Google Contacts in Settings. */
+/** Connects Google Contacts + Calendar in one OAuth flow (Settings / integrations). */
 export const googleContactsProvider = new GoogleAuthProvider();
-googleContactsProvider.setCustomParameters({ prompt: "consent" });
+googleContactsProvider.setCustomParameters({
+  prompt: "consent",
+  include_granted_scopes: "true",
+});
 googleContactsProvider.addScope(GOOGLE_CONTACTS_SCOPE);
+googleContactsProvider.addScope(GOOGLE_CALENDAR_SCOPE);
+googleContactsProvider.addScope(GOOGLE_CALENDAR_EVENTS_SCOPE);
 
 export { getAuth };

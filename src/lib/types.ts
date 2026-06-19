@@ -130,7 +130,24 @@ export type ActivityType =
   | "transactions_imported"
   | "note_added"
   | "goal_added"
-  | "life_event_added";
+  | "life_event_added"
+  | "calendar_connected"
+  | "meeting_scheduled"
+  | "contact_from_meeting";
+
+export interface CalendarEvent {
+  id: string;
+  googleEventId: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  attendeeEmails?: string[];
+  location?: string;
+  meetLink?: string;
+  linkedContactIds?: string[];
+  linkedCompanyId?: string;
+}
 
 export interface Activity {
   id?: string;
@@ -270,11 +287,15 @@ export interface HubSpotIntegration {
   lastSyncedAt?: string;
 }
 
+export type GoogleIntegrationScope = "contacts" | "calendar";
+
 export interface GoogleIntegration {
   accessToken: string;
   connectedAt: string;
   lastSyncedAt?: string;
   lastImportCount?: number;
+  calendarLastSyncedAt?: string;
+  scopes?: GoogleIntegrationScope[];
 }
 
 export interface FileImportIntegration {

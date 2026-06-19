@@ -6,11 +6,11 @@ import {
   Cell,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import { ChartContainer } from "@/components/ui/chart-container";
 import type {
   CategoryChartDatum,
   DailySpendingDatum,
@@ -37,32 +37,30 @@ export default function FinanceCharts({
         <p className="mt-1 text-xs text-muted-foreground">{periodLabel}</p>
 
         {categoryData.length > 0 ? (
-          <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={58}
-                  outerRadius={88}
-                  paddingAngle={2}
-                >
-                  {categoryData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) => formatLkr(Number(value))}
-                  contentStyle={{
-                    borderRadius: "12px",
-                    border: "1px solid var(--border)",
-                    background: "var(--card)",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer className="mt-4" height={256}>
+            <PieChart>
+              <Pie
+                data={categoryData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={58}
+                outerRadius={88}
+                paddingAngle={2}
+              >
+                {categoryData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value) => formatLkr(Number(value))}
+                contentStyle={{
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  background: "var(--card)",
+                }}
+              />
+            </PieChart>
+          </ChartContainer>
         ) : (
           <div className="mt-4 flex h-64 items-center justify-center rounded-xl bg-muted/30 text-sm text-muted-foreground">
             No spending data for {periodLabel.toLowerCase()}
@@ -94,39 +92,37 @@ export default function FinanceCharts({
         <p className="mt-1 text-xs text-muted-foreground">This week</p>
 
         {dailyData.some((item) => item.amount > 0) ? (
-          <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyData}>
-                <XAxis
-                  dataKey="day"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-                  tickFormatter={(value) =>
-                    value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)
-                  }
-                />
-                <Tooltip
-                  formatter={(value) => formatLkr(Number(value))}
-                  contentStyle={{
-                    borderRadius: "12px",
-                    border: "1px solid var(--border)",
-                    background: "var(--card)",
-                  }}
-                />
-                <Bar
-                  dataKey="amount"
-                  fill="#6366f1"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer className="mt-4" height={256}>
+            <BarChart data={dailyData}>
+              <XAxis
+                dataKey="day"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tickFormatter={(value) =>
+                  value >= 1000 ? `${Math.round(value / 1000)}k` : String(value)
+                }
+              />
+              <Tooltip
+                formatter={(value) => formatLkr(Number(value))}
+                contentStyle={{
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  background: "var(--card)",
+                }}
+              />
+              <Bar
+                dataKey="amount"
+                fill="#6366f1"
+                radius={[6, 6, 0, 0]}
+              />
+            </BarChart>
+          </ChartContainer>
         ) : (
           <div className="mt-4 flex h-64 items-center justify-center rounded-xl bg-muted/30 text-sm text-muted-foreground">
             No spending data this week

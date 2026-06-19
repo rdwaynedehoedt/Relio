@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   Briefcase,
   Building2,
+  Calendar,
   ChevronRight,
   LayoutDashboard,
   Lightbulb,
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 const crmItems = [
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/companies", label: "Companies", icon: Building2 },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
 ];
 
 const primaryNavItems = [

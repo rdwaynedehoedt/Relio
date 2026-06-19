@@ -89,6 +89,35 @@ export function getUniqueTags(contacts: Contact[]) {
   return Array.from(tags).sort();
 }
 
+export const CONTACT_SOURCE_OPTIONS = [
+  { value: "google", label: "Google Contacts" },
+  { value: "hubspot", label: "HubSpot" },
+  { value: "manual", label: "Manual" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "vcf", label: "Phone / VCF" },
+] as const;
+
+export type ContactSourceValue =
+  | (typeof CONTACT_SOURCE_OPTIONS)[number]["value"]
+  | "unspecified";
+
+export function getContactSourceLabel(source?: string): string {
+  if (!source) return "Unspecified";
+  const match = CONTACT_SOURCE_OPTIONS.find((option) => option.value === source);
+  return match?.label ?? source;
+}
+
+export function countContactsBySource(contacts: Contact[]): Record<string, number> {
+  const counts: Record<string, number> = { all: contacts.length };
+
+  contacts.forEach((contact) => {
+    const key = contact.source || "unspecified";
+    counts[key] = (counts[key] ?? 0) + 1;
+  });
+
+  return counts;
+}
+
 export const STALE_CONTACT_DAYS = 30;
 
 export function isStaleContact(
@@ -119,6 +148,8 @@ export function matchesFilters(
     industryFilter,
     lifecycleStageFilter,
     leadStatusFilter,
+    sourceFilter,
+    companyFilter,
     customFilters,
   }: {
     search: string;
@@ -127,6 +158,8 @@ export function matchesFilters(
     industryFilter: string;
     lifecycleStageFilter: string;
     leadStatusFilter: string;
+    sourceFilter: string;
+    companyFilter: string;
     customFilters: CustomFilter[];
   },
 ) {
@@ -153,6 +186,22 @@ export function matchesFilters(
   }
 
   if (leadStatusFilter && contact.leadStatus !== leadStatusFilter) {
+    return false;
+  }
+
+  if (sourceFilter) {
+    if (sourceFilter === "unspecified") {
+      if (contact.source) return false;
+    } else if (contact.source !== sourceFilter) {
+      return false;
+    }
+  }
+
+  if (
+    companyFilter &&
+    contact.companyName?.trim().toLowerCase() !==
+      companyFilter.trim().toLowerCase()
+  ) {
     return false;
   }
 

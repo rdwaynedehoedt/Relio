@@ -411,6 +411,20 @@ export async function updateGoogleLastSynced(
   );
 }
 
+export async function updateGoogleCalendarLastSynced(
+  userId: string,
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await setDoc(
+    doc(db, "users", userId, "integrations", "google"),
+    {
+      calendarLastSyncedAt: new Date().toISOString(),
+    },
+    { merge: true },
+  );
+}
+
 export async function updateFileImportMeta(
   userId: string,
   provider: "linkedin" | "vcf",

@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import type { GoogleImportContact } from "@/lib/types";
+import {
+  GOOGLE_API_DISABLED_CODE,
+  formatGoogleApiErrorMessage,
+  parseGoogleApiDisabledError,
+} from "@/lib/google-api-errors";
 
 const PERSON_FIELDS = [
   "names",
@@ -67,8 +72,22 @@ async function fetchGoogleConnections(
 
     if (!response.ok) {
       const errorBody = await response.text();
+      const disabled = parseGoogleApiDisabledError(errorBody);
+
+      if (disabled) {
+        throw Object.assign(new Error(disabled.message), {
+          code: GOOGLE_API_DISABLED_CODE,
+          activationUrl: disabled.activationUrl,
+          serviceTitle: disabled.serviceTitle,
+        });
+      }
+
       throw new Error(
-        `Google People API error (${response.status}): ${errorBody || response.statusText}`,
+        formatGoogleApiErrorMessage(
+          response.status,
+          errorBody,
+          "Google People API",
+        ),
       );
     }
 
@@ -105,6 +124,24 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Google Contacts import failed:", error);
+
+    const err = error as Error & {
+      code?: string;
+      activationUrl?: string;
+      serviceTitle?: string;
+    };
+
+    if (err.code === GOOGLE_API_DISABLED_CODE) {
+      return NextResponse.json(
+        {
+          error: err.message,
+          code: GOOGLE_API_DISABLED_CODE,
+          activationUrl: err.activationUrl,
+          serviceTitle: err.serviceTitle,
+        },
+        { status: 403 },
+      );
+    }
 
     return NextResponse.json(
       {

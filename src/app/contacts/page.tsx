@@ -38,6 +38,9 @@ import {
   type ContactSortOption,
   type CustomFilter,
   type CustomFilterField,
+  CONTACT_SOURCE_OPTIONS,
+  countContactsBySource,
+  getContactSourceLabel,
   getInitials,
   getUniqueTags,
   getUniqueValues,
@@ -102,6 +105,8 @@ function ContactsPageContent() {
   const [industryFilter, setIndustryFilter] = useState("");
   const [lifecycleStageFilter, setLifecycleStageFilter] = useState("");
   const [leadStatusFilter, setLeadStatusFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("");
   const [customFilters, setCustomFilters] = useState<CustomFilter[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"add" | "edit">("add");
@@ -200,6 +205,8 @@ function ContactsPageContent() {
           industryFilter,
           lifecycleStageFilter,
           leadStatusFilter,
+          sourceFilter,
+          companyFilter,
           customFilters,
         })
       ) {
@@ -220,6 +227,8 @@ function ContactsPageContent() {
     industryFilter,
     lifecycleStageFilter,
     leadStatusFilter,
+    sourceFilter,
+    companyFilter,
     customFilters,
     activeTab,
     reconnectFilter,
@@ -251,7 +260,7 @@ function ContactsPageContent() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, tagFilter, countryFilter, industryFilter, lifecycleStageFilter, leadStatusFilter, customFilters, activeTab, sortBy, pageSize]);
+  }, [search, tagFilter, countryFilter, industryFilter, lifecycleStageFilter, leadStatusFilter, sourceFilter, companyFilter, customFilters, activeTab, sortBy, pageSize]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -328,6 +337,35 @@ function ContactsPageContent() {
     () => getUniqueValues(contacts, "annualRevenue"),
     [contacts],
   );
+  const uniqueCompanies = useMemo(
+    () => getUniqueValues(contacts, "companyName"),
+    [contacts],
+  );
+  const sourceCounts = useMemo(
+    () => countContactsBySource(contacts),
+    [contacts],
+  );
+
+  const sourceQuickFilters = useMemo(() => {
+    const tabs = [
+      { value: "", label: "All sources", count: sourceCounts.all ?? 0 },
+      ...CONTACT_SOURCE_OPTIONS.map((option) => ({
+        value: option.value,
+        label: option.label,
+        count: sourceCounts[option.value] ?? 0,
+      })),
+    ];
+
+    if (sourceCounts.unspecified) {
+      tabs.push({
+        value: "unspecified",
+        label: "Unspecified",
+        count: sourceCounts.unspecified,
+      });
+    }
+
+    return tabs.filter((tab) => tab.value === "" || tab.count > 0);
+  }, [sourceCounts]);
 
   function openAddDrawer() {
     setDrawerMode("add");
@@ -453,6 +491,7 @@ function ContactsPageContent() {
       industry: setIndustryFilter,
       lifecycleStage: setLifecycleStageFilter,
       leadStatus: setLeadStatusFilter,
+      source: setSourceFilter,
     };
 
     if (topLevelSetters[field]) {
@@ -690,6 +729,27 @@ function ContactsPageContent() {
                     My contacts
                   </button>
                 </div>
+
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {sourceQuickFilters.map((tab) => (
+                    <button
+                      key={tab.value || "all-sources"}
+                      type="button"
+                      onClick={() => setSourceFilter(tab.value)}
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
+                        sourceFilter === tab.value
+                          ? "bg-primary/10 font-medium text-primary"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                      )}
+                    >
+                      {tab.label}
+                      <span className="text-[10px] text-muted-foreground">
+                        {tab.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div
@@ -730,6 +790,34 @@ function ContactsPageContent() {
                 className="flex shrink-0 flex-wrap items-center gap-1.5 px-6 pb-2"
                 onClick={(event) => event.stopPropagation()}
               >
+                <HubSpotFilterPill
+                  label="Source"
+                  value={sourceFilter}
+                  options={[
+                    ...CONTACT_SOURCE_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: `${option.label} (${sourceCounts[option.value] ?? 0})`,
+                    })),
+                    ...(sourceCounts.unspecified
+                      ? [
+                          {
+                            value: "unspecified",
+                            label: `Unspecified (${sourceCounts.unspecified})`,
+                          },
+                        ]
+                      : []),
+                  ]}
+                  formatValue={getContactSourceLabel}
+                  onChange={setSourceFilter}
+                  onClear={() => setSourceFilter("")}
+                />
+                <HubSpotFilterPill
+                  label="Company"
+                  value={companyFilter}
+                  options={uniqueCompanies}
+                  onChange={setCompanyFilter}
+                  onClear={() => setCompanyFilter("")}
+                />
                 <HubSpotFilterPill
                   label="Country"
                   value={countryFilter}
@@ -773,7 +861,10 @@ function ContactsPageContent() {
                     onClick={() => removeCustomFilter(filter.id)}
                     className="inline-flex h-7 items-center gap-1 rounded-full bg-muted/60 px-2.5 text-xs text-foreground transition-colors hover:bg-muted"
                   >
-                    {filterFieldLabels[filter.field]}: {filter.value}
+                    {filterFieldLabels[filter.field]}:{" "}
+                    {filter.field === "source"
+                      ? getContactSourceLabel(filter.value)
+                      : filter.value}
                     <X className="size-3 text-muted-foreground" />
                   </button>
                 ))}
@@ -992,6 +1083,7 @@ function ContactsPageContent() {
               <section className="min-w-0 flex-1 overflow-hidden bg-background animate-in slide-in-from-right-4 border-l border-border/50 duration-300">
                 <ContactDetail
                   contact={selectedContact}
+                  contacts={contacts}
                   onUpdate={handleInlineUpdate}
                   onDelete={handleDelete}
                   onEdit={openEditDrawer}
@@ -1104,29 +1196,49 @@ function HubSpotFilterPill({
   label,
   value,
   options,
+  formatValue,
   onChange,
   onClear,
 }: {
   label: string;
   value: string;
-  options: string[];
+  options: Array<string | { value: string; label: string }>;
+  formatValue?: (value: string) => string;
   onChange: (value: string) => void;
   onClear: () => void;
 }) {
+  const normalizedOptions = options.map((option) =>
+    typeof option === "string" ? { value: option, label: option } : option,
+  );
+
+  const displayValue = value
+    ? formatValue?.(value) ??
+      normalizedOptions.find((option) => option.value === value)?.label ??
+      value
+    : "";
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
+      <div
         className={cn(
-          "inline-flex h-7 items-center gap-1 rounded-full bg-muted/50 px-2.5 text-xs text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground",
+          "inline-flex h-7 items-center rounded-full bg-muted/50 text-xs text-muted-foreground",
           value && "bg-muted font-medium text-foreground",
         )}
         onClick={(event) => event.stopPropagation()}
       >
-        {value ? `${label}: ${value}` : label}
+        <DropdownMenuTrigger
+          className="inline-flex h-full items-center gap-1 rounded-full px-2.5 outline-none transition-colors hover:bg-muted hover:text-foreground"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {value ? `${label}: ${displayValue}` : label}
+          {!value ? (
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          ) : null}
+        </DropdownMenuTrigger>
         {value ? (
           <button
             type="button"
-            className="rounded-full p-0.5 hover:bg-background/60"
+            className="rounded-full p-0.5 pr-1.5 hover:bg-background/60"
             onClick={(event) => {
               event.stopPropagation();
               onClear();
@@ -1135,10 +1247,8 @@ function HubSpotFilterPill({
           >
             <X className="size-3 text-muted-foreground" />
           </button>
-        ) : (
-          <ChevronDown className="size-3.5 text-muted-foreground" />
-        )}
-      </DropdownMenuTrigger>
+        ) : null}
+      </div>
       <DropdownMenuContent
         className="min-w-44"
         onClick={(event) => event.stopPropagation()}
@@ -1146,15 +1256,15 @@ function HubSpotFilterPill({
         <DropdownMenuItem onClick={onClear}>
           All {label.toLowerCase()}
         </DropdownMenuItem>
-        {options.length > 0 ? (
-          options.map((option) => (
+        {normalizedOptions.length > 0 ? (
+          normalizedOptions.map((option) => (
             <DropdownMenuItem
-              key={option}
-              onClick={() => onChange(value === option ? "" : option)}
+              key={option.value}
+              onClick={() => onChange(value === option.value ? "" : option.value)}
               className="flex items-center justify-between gap-3"
             >
-              <span>{option}</span>
-              {value === option ? (
+              <span>{option.label}</span>
+              {value === option.value ? (
                 <Check className="size-3.5 text-foreground" />
               ) : null}
             </DropdownMenuItem>
@@ -1215,6 +1325,15 @@ function AddFilterMenu({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onAdd("source", "hubspot")}>
               HubSpot
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAdd("source", "google")}>
+              Google Contacts
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAdd("source", "linkedin")}>
+              LinkedIn
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAdd("source", "vcf")}>
+              Phone / VCF
             </DropdownMenuItem>
           </>
         ) : (

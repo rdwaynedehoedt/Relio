@@ -7,7 +7,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -29,6 +28,7 @@ import AdminGuard from "@/components/AdminGuard";
 import Sidebar from "@/components/Sidebar";
 import SidebarInset from "@/components/SidebarInset";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChartContainer } from "@/components/ui/chart-container";
 import { SidebarProvider } from "@/hooks/useSidebar";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -385,24 +385,22 @@ export default function AdminPage() {
                       <p className="mt-1 text-sm text-muted-foreground">
                         New Firebase Auth accounts per day
                       </p>
-                      <div className="mt-5 h-56">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={data.signupTrend}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                            <Tooltip
-                              formatter={(value) => [`${value} users`, "Signups"]}
-                              contentStyle={{
-                                borderRadius: "12px",
-                                border: "1px solid var(--border)",
-                                background: "var(--card)",
-                              }}
-                            />
-                            <Bar dataKey="count" fill="#0a0a0a" radius={[6, 6, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
+                      <ChartContainer className="mt-5" height={224}>
+                        <BarChart data={data.signupTrend}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                          <Tooltip
+                            formatter={(value) => [`${value} users`, "Signups"]}
+                            contentStyle={{
+                              borderRadius: "12px",
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                            }}
+                          />
+                          <Bar dataKey="count" fill="#0a0a0a" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ChartContainer>
                     </div>
 
                     <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
@@ -509,45 +507,43 @@ export default function AdminPage() {
                       <p className="mt-1 text-sm text-muted-foreground">
                         % of registered users using each feature
                       </p>
-                      <div className="mt-5 h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={data.featureAdoption}
-                            layout="vertical"
-                            margin={{ left: 8, right: 24, top: 8, bottom: 8 }}
-                          >
-                            <XAxis type="number" allowDecimals={false} domain={[0, "dataMax"]} />
-                            <YAxis
-                              type="category"
-                              dataKey="label"
-                              width={120}
-                              tick={{ fontSize: 11 }}
-                            />
-                            <Tooltip
-                              formatter={(value, _name, item) => {
-                                const total = item.payload.total as number;
-                                return [
-                                  `${value} users (${adoptionPercent(Number(value), total)})`,
-                                  "Adoption",
-                                ];
-                              }}
-                              contentStyle={{
-                                borderRadius: "12px",
-                                border: "1px solid var(--border)",
-                                background: "var(--card)",
-                              }}
-                            />
-                            <Bar dataKey="users" radius={[0, 6, 6, 0]}>
-                              {data.featureAdoption.map((entry, index) => (
-                                <Cell
-                                  key={entry.label}
-                                  fill={index % 2 === 0 ? "#0a0a0a" : "#525252"}
-                                />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
+                      <ChartContainer className="mt-5" height={320}>
+                        <BarChart
+                          data={data.featureAdoption}
+                          layout="vertical"
+                          margin={{ left: 8, right: 24, top: 8, bottom: 8 }}
+                        >
+                          <XAxis type="number" allowDecimals={false} domain={[0, "dataMax"]} />
+                          <YAxis
+                            type="category"
+                            dataKey="label"
+                            width={120}
+                            tick={{ fontSize: 11 }}
+                          />
+                          <Tooltip
+                            formatter={(value, _name, item) => {
+                              const total = item.payload.total as number;
+                              return [
+                                `${value} users (${adoptionPercent(Number(value), total)})`,
+                                "Adoption",
+                              ];
+                            }}
+                            contentStyle={{
+                              borderRadius: "12px",
+                              border: "1px solid var(--border)",
+                              background: "var(--card)",
+                            }}
+                          />
+                          <Bar dataKey="users" radius={[0, 6, 6, 0]}>
+                            {data.featureAdoption.map((entry, index) => (
+                              <Cell
+                                key={entry.label}
+                                fill={index % 2 === 0 ? "#0a0a0a" : "#525252"}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ChartContainer>
                     </div>
 
                     <div className="space-y-6">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Pencil, Trash2, X } from "lucide-react";
+import MeetingHistory from "@/components/calendar/MeetingHistory";
 import {
   PanelDeleteDialog,
   PanelField,
@@ -20,6 +21,7 @@ import type { Contact } from "@/lib/types";
 
 interface ContactDetailProps {
   contact: Contact | null;
+  contacts: Contact[];
   onUpdate: (id: string, data: Partial<Contact>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onEdit: () => void;
@@ -56,6 +58,7 @@ function ReadOnlyField({
 
 export default function ContactDetail({
   contact,
+  contacts,
   onUpdate,
   onDelete,
   onEdit,
@@ -277,6 +280,12 @@ export default function ContactDetail({
         <p className="px-2 pt-0.5 text-xs text-muted-foreground/70">
           {formatInteractionDate(currentContact.lastInteractionDate)}
         </p>
+
+        <MeetingHistory
+          contact={currentContact}
+          contacts={contacts}
+          onContactUpdated={onUpdate}
+        />
       </div>
 
       <PanelDeleteDialog

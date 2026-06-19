@@ -11,6 +11,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import TodayMeetingsCard from "@/components/calendar/TodayMeetingsCard";
 import AuthGuard from "@/components/AuthGuard";
 import GettingStartedCard from "@/components/onboarding/GettingStartedCard";
 import Sidebar from "@/components/Sidebar";
@@ -399,6 +400,10 @@ export default function DashboardPage() {
                   Open Life Map
                 </Link>
               </CommandCard>
+            </section>
+
+            <section className="mt-6">
+              <TodayMeetingsCard />
             </section>
 
             {/* Section 3 — Overview */}
