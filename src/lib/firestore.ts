@@ -457,6 +457,27 @@ export async function getFileImportMeta(
   return snapshot.data() as FileImportIntegration;
 }
 
+export async function deleteGoogleIntegration(userId: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "users", userId, "integrations", "google"));
+}
+
+export async function deleteHubSpotIntegration(userId: string): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "users", userId, "integrations", "hubspot"));
+}
+
+export async function deleteFileImportMeta(
+  userId: string,
+  provider: "linkedin" | "vcf",
+): Promise<void> {
+  if (!db) throw new Error("Firestore is not configured.");
+
+  await deleteDoc(doc(db, "users", userId, "integrations", provider));
+}
+
 export async function getContactByEmail(
   userId: string,
   email: string,

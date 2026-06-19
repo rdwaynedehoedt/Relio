@@ -11,6 +11,10 @@ import {
 import type { CalendarEvent, Contact, Company } from "@/lib/types";
 import { addContact, logActivity } from "@/lib/firestore";
 import {
+  GOOGLE_API_DISABLED_CODE,
+  googleApiDisabledFromPayload,
+} from "@/lib/google-api-errors";
+import {
   GOOGLE_CALENDAR_SCOPE_MISSING_CODE,
   GOOGLE_TOKEN_EXPIRED_CODE,
   GoogleCalendarScopeMissingError,
@@ -280,7 +284,13 @@ export async function fetchCalendarEvents(
     const body = (await response.json().catch(() => ({}))) as {
       error?: string;
       code?: string;
+      activationUrl?: string;
+      serviceTitle?: string;
     };
+
+    if (body.code === GOOGLE_API_DISABLED_CODE) {
+      throw googleApiDisabledFromPayload("calendar", body);
+    }
 
     if (response.status === 401 || body.code === GOOGLE_TOKEN_EXPIRED_CODE) {
       throw new GoogleTokenExpiredError(
@@ -363,7 +373,13 @@ export async function createCalendarEvent(
     const body = (await response.json().catch(() => ({}))) as {
       error?: string;
       code?: string;
+      activationUrl?: string;
+      serviceTitle?: string;
     };
+
+    if (body.code === GOOGLE_API_DISABLED_CODE) {
+      throw googleApiDisabledFromPayload("calendar", body);
+    }
 
     if (response.status === 401 || body.code === GOOGLE_TOKEN_EXPIRED_CODE) {
       throw new GoogleTokenExpiredError(

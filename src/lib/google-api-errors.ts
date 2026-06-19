@@ -1,4 +1,55 @@
+import {
+  type GoogleApiService,
+  googleApiEnableUrl,
+  googleApiServiceTitle,
+} from "@/lib/google-cloud-constants";
+
 export const GOOGLE_API_DISABLED_CODE = "GOOGLE_API_DISABLED";
+
+export class GoogleApiDisabledError extends Error {
+  readonly code = GOOGLE_API_DISABLED_CODE;
+
+  constructor(
+    public readonly service: GoogleApiService,
+    public readonly enableUrl: string,
+    public readonly serviceTitle: string,
+    message?: string,
+  ) {
+    super(
+      message ??
+        `${serviceTitle} is not enabled for this Google Cloud project.`,
+    );
+    this.name = "GoogleApiDisabledError";
+  }
+}
+
+export function isGoogleApiDisabledError(
+  error: unknown,
+): error is GoogleApiDisabledError {
+  return (
+    error instanceof GoogleApiDisabledError ||
+    (typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: string }).code === GOOGLE_API_DISABLED_CODE)
+  );
+}
+
+export function googleApiDisabledFromPayload(
+  service: GoogleApiService,
+  payload: {
+    error?: string;
+    activationUrl?: string;
+    serviceTitle?: string;
+  },
+): GoogleApiDisabledError {
+  return new GoogleApiDisabledError(
+    service,
+    payload.activationUrl ?? googleApiEnableUrl(service),
+    payload.serviceTitle ?? googleApiServiceTitle(service),
+    payload.error,
+  );
+}
 
 export type GoogleApiDisabledInfo = {
   serviceTitle: string;

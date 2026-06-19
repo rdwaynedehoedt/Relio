@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import {
   Check,
   ExternalLink,
@@ -10,8 +10,10 @@ import {
   Loader2,
   RefreshCw,
   Smartphone,
+  Unplug,
 } from "lucide-react";
 import HubSpotLogo from "@/components/HubSpotLogo";
+import EnableApiModal from "@/components/settings/EnableApiModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +28,24 @@ import {
   getGoogleIntegration,
   getHubSpotToken,
   logActivity,
+  deleteFileImportMeta,
+  deleteGoogleIntegration,
+  deleteHubSpotIntegration,
   saveHubSpotToken,
   updateGoogleCalendarLastSynced,
 } from "@/lib/firestore";
 import { syncHubSpotData } from "@/lib/hubspot-sync";
+import { getViewRange, loadCalendarEventsForUser } from "@/lib/calendar-utils";
+import {
+  GOOGLE_CALENDAR_API_ENABLE_URL,
+  GOOGLE_PEOPLE_API_ENABLE_URL,
+  type GoogleApiService,
+} from "@/lib/google-cloud-constants";
+import {
+  GoogleApiDisabledError,
+  isGoogleApiDisabledError,
+} from "@/lib/google-api-errors";
+import { testGoogleConnection } from "@/lib/google-test-connection";
 
 function IntegrationStatusBadge({ connected }: { connected: boolean }) {
   if (connected) {
@@ -110,6 +126,131 @@ function IntegrationCard({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ConnectedBanner({
+  title,
+  detail,
+}: {
+  title: string;
+  detail?: string;
+}) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-900 dark:text-emerald-100">
+      <Check className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+      <div>
+        <p className="font-medium">{title}</p>
+        {detail ? (
+          <p className="mt-0.5 text-xs text-emerald-800/80 dark:text-emerald-100/80">
+            {detail}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function IntegrationActionButtons({
+  connected,
+  connectLabel,
+  connecting,
+  syncing,
+  disconnecting,
+  onConnect,
+  onSync,
+  onDisconnect,
+  syncDisabled,
+  connectDisabled,
+}: {
+  connected: boolean;
+  connectLabel: string;
+  connecting: boolean;
+  syncing: boolean;
+  disconnecting: boolean;
+  onConnect: () => void;
+  onSync: () => void;
+  onDisconnect: () => void;
+  syncDisabled?: boolean;
+  connectDisabled?: boolean;
+}) {
+  if (!connected) {
+    return (
+      <Button
+        onClick={onConnect}
+        disabled={connecting || connectDisabled}
+        className="h-10"
+      >
+        {connecting ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Connecting...
+          </>
+        ) : (
+          connectLabel
+        )}
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button
+        variant="outline"
+        onClick={onSync}
+        disabled={syncing || syncDisabled}
+        className="h-10"
+      >
+        {syncing ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Syncing...
+          </>
+        ) : (
+          <>
+            <RefreshCw className="size-4" />
+            Sync now
+          </>
+        )}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={onDisconnect}
+        disabled={disconnecting}
+        className="h-10 text-destructive hover:text-destructive"
+      >
+        {disconnecting ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Disconnecting...
+          </>
+        ) : (
+          <>
+            <Unplug className="size-4" />
+            Disconnect
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function formatConnectedDetail(
+  connectedAt: string | null,
+  lastSyncedAt: string | null,
+): string | undefined {
+  const parts: string[] = [];
+
+  if (connectedAt) {
+    parts.push(`Connected ${format(new Date(connectedAt), "MMM d, yyyy")}`);
+  }
+
+  if (lastSyncedAt) {
+    parts.push(
+      `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}`,
+    );
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
 export default function IntegrationsPanel() {
   const { user, connectGoogleContacts } = useAuth();
 
@@ -123,6 +264,7 @@ export default function IntegrationsPanel() {
     string | null
   >(null);
   const [googleScopes, setGoogleScopes] = useState<string[]>([]);
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [googleImportCount, setGoogleImportCount] = useState<number | null>(null);
   const [linkedinLastSyncedAt, setLinkedinLastSyncedAt] = useState<string | null>(
     null,
@@ -136,15 +278,26 @@ export default function IntegrationsPanel() {
   const [loading, setLoading] = useState(true);
   const [hubspotSaving, setHubspotSaving] = useState(false);
   const [hubspotSyncing, setHubspotSyncing] = useState(false);
+  const [hubspotDisconnecting, setHubspotDisconnecting] = useState(false);
+  const [googleConnecting, setGoogleConnecting] = useState(false);
   const [googleSyncing, setGoogleSyncing] = useState(false);
+  const [googleDisconnecting, setGoogleDisconnecting] = useState(false);
   const [linkedinSyncing, setLinkedinSyncing] = useState(false);
+  const [linkedinDisconnecting, setLinkedinDisconnecting] = useState(false);
   const [vcfSyncing, setVcfSyncing] = useState(false);
+  const [vcfDisconnecting, setVcfDisconnecting] = useState(false);
 
   const [hubspotStatus, setHubspotStatus] = useState<string | null>(null);
   const [googleStatus, setGoogleStatus] = useState<string | null>(null);
   const [linkedinStatus, setLinkedinStatus] = useState<string | null>(null);
   const [vcfStatus, setVcfStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [testingGoogleService, setTestingGoogleService] =
+    useState<GoogleApiService | null>(null);
+  const [enableApiModalOpen, setEnableApiModalOpen] = useState(false);
+  const [enableApiService, setEnableApiService] =
+    useState<GoogleApiService>("contacts");
+  const [enableApiUrl, setEnableApiUrl] = useState(GOOGLE_PEOPLE_API_ENABLE_URL);
 
   const linkedinInputRef = useRef<HTMLInputElement>(null);
   const vcfInputRef = useRef<HTMLInputElement>(null);
@@ -157,6 +310,8 @@ export default function IntegrationsPanel() {
   const calendarConnected =
     googleConnected &&
     (googleScopes.includes("calendar") || googleCalendarLastSyncedAt !== null);
+  const linkedinConnected = linkedinLastSyncedAt !== null;
+  const vcfConnected = vcfLastSyncedAt !== null;
 
   useEffect(() => {
     if (!user) return;
@@ -184,6 +339,7 @@ export default function IntegrationsPanel() {
           setGoogleCalendarLastSyncedAt(google.calendarLastSyncedAt ?? null);
           setGoogleImportCount(google.lastImportCount ?? null);
           setGoogleScopes(google.scopes ?? ["contacts", "calendar"]);
+          setGoogleAccessToken(google.accessToken ?? null);
         }
 
         if (linkedin) {
@@ -242,10 +398,105 @@ export default function IntegrationsPanel() {
     }
   }
 
-  async function handleGoogleConnectAndImport() {
+  async function handleHubSpotDisconnect() {
     if (!user) return;
 
-    setGoogleSyncing(true);
+    setHubspotDisconnecting(true);
+    setError(null);
+
+    try {
+      await deleteHubSpotIntegration(user.uid);
+      setToken("");
+      setHubspotConnectedAt(null);
+      setHubspotLastSyncedAt(null);
+      setHubspotStatus("HubSpot disconnected.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not disconnect HubSpot.",
+      );
+    } finally {
+      setHubspotDisconnecting(false);
+    }
+  }
+
+  async function resolveGoogleAccessToken(): Promise<string> {
+    if (!user) {
+      throw new Error("You must be signed in.");
+    }
+
+    const integration = await getGoogleIntegration(user.uid);
+    const storedToken = integration?.accessToken ?? googleAccessToken;
+
+    if (storedToken) return storedToken;
+
+    const accessToken = await connectGoogleContacts();
+    if (!accessToken) {
+      throw new Error("Could not get Google access token.");
+    }
+
+    setGoogleAccessToken(accessToken);
+    setGoogleConnectedAt(new Date().toISOString());
+    setGoogleScopes(["contacts", "calendar"]);
+    return accessToken;
+  }
+
+  function openEnableApiModal(error: GoogleApiDisabledError) {
+    setEnableApiService(error.service);
+    setEnableApiUrl(error.enableUrl);
+    setEnableApiModalOpen(true);
+    setError(null);
+  }
+
+  async function runGoogleConnectionTest(
+    service: GoogleApiService,
+  ): Promise<boolean> {
+    const accessToken = await resolveGoogleAccessToken();
+    const result = await testGoogleConnection(service, accessToken);
+
+    if (result.success) {
+      return true;
+    }
+
+    if (result.errorType === "service_disabled") {
+      setEnableApiService(service);
+      setEnableApiUrl(result.enableUrl);
+      setEnableApiModalOpen(true);
+      setError(null);
+      return false;
+    }
+
+    setError(result.message);
+    return false;
+  }
+
+  async function handleGoogleTestConnection(service: GoogleApiService) {
+    setTestingGoogleService(service);
+    setError(null);
+
+    try {
+      const ok = await runGoogleConnectionTest(service);
+      if (ok) {
+        setGoogleStatus(
+          `${service === "contacts" ? "Contacts" : "Calendar"} connection verified.`,
+        );
+      }
+    } catch (err) {
+      if (isGoogleApiDisabledError(err)) {
+        openEnableApiModal(err);
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Connection test failed.",
+        );
+      }
+    } finally {
+      setTestingGoogleService(null);
+    }
+  }
+
+  async function handleGoogleConnect() {
+    if (!user) return;
+
+    setGoogleConnecting(true);
     setError(null);
     setGoogleStatus("Connecting to Google...");
 
@@ -257,13 +508,35 @@ export default function IntegrationsPanel() {
 
       const now = new Date().toISOString();
       setGoogleConnectedAt(now);
+      setGoogleAccessToken(accessToken);
       setGoogleScopes(["contacts", "calendar"]);
       setGoogleCalendarLastSyncedAt(now);
 
       await logActivity(user.uid, "calendar_connected", "Connected Google Calendar");
       await updateGoogleCalendarLastSynced(user.uid);
 
-      setGoogleStatus("Google connected.");
+      setGoogleStatus(
+        "Google connected. Contacts and Calendar are ready — use Sync now to import.",
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Google connection failed.",
+      );
+      setGoogleStatus(null);
+    } finally {
+      setGoogleConnecting(false);
+    }
+  }
+
+  async function handleGoogleSync() {
+    if (!user) return;
+
+    setGoogleSyncing(true);
+    setError(null);
+    setGoogleStatus("Syncing Google contacts...");
+
+    try {
+      let accessToken = await resolveGoogleAccessToken();
 
       try {
         const result = await syncGoogleContacts(
@@ -274,27 +547,150 @@ export default function IntegrationsPanel() {
 
         setGoogleLastSyncedAt(result.syncedAt);
         setGoogleImportCount(result.imported);
-        setGoogleStatus(
-          `Connected. Imported ${result.imported} contact${result.imported === 1 ? "" : "s"}.`,
-        );
+        setGoogleStatus(`Imported ${result.imported} contact(s).`);
       } catch (importErr) {
+        if (isGoogleApiDisabledError(importErr)) {
+          openEnableApiModal(importErr);
+          setGoogleStatus(null);
+          return;
+        }
+
         const message =
           importErr instanceof Error
             ? importErr.message
             : "Contacts import failed.";
 
-        setGoogleStatus(
-          "Google Calendar connected. Contacts import needs People API enabled in Google Cloud Console.",
-        );
-        setError(message);
+        if (
+          message.toLowerCase().includes("expired") ||
+          message.toLowerCase().includes("invalid")
+        ) {
+          accessToken = await connectGoogleContacts() ?? "";
+          if (!accessToken) throw importErr;
+
+          setGoogleAccessToken(accessToken);
+          const result = await syncGoogleContacts(
+            user.uid,
+            accessToken,
+            setGoogleStatus,
+          );
+          setGoogleLastSyncedAt(result.syncedAt);
+          setGoogleImportCount(result.imported);
+          setGoogleStatus(`Imported ${result.imported} contact(s).`);
+        } else {
+          setGoogleStatus("Contacts sync failed. Calendar sync continuing...");
+          setError(message);
+        }
       }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Google connection failed.",
+
+      setGoogleStatus((current) =>
+        current ? `${current} Syncing calendar...` : "Syncing calendar...",
       );
-      setGoogleStatus(null);
+
+      const { start: timeMin, end: timeMax } = getViewRange("week", new Date());
+      const calendarResult = await loadCalendarEventsForUser(
+        accessToken,
+        timeMin,
+        timeMax,
+      );
+
+      if (calendarResult.needsReconnect) {
+        const refreshedToken = await connectGoogleContacts();
+        if (!refreshedToken) {
+          throw new Error("Google session expired. Please connect again.");
+        }
+
+        setGoogleAccessToken(refreshedToken);
+        const retry = await loadCalendarEventsForUser(
+          refreshedToken,
+          timeMin,
+          timeMax,
+        );
+
+        if (retry.needsReconnect) {
+          throw new Error("Google session expired. Please connect again.");
+        }
+      }
+
+      const syncedAt = new Date().toISOString();
+      await updateGoogleCalendarLastSynced(user.uid);
+      setGoogleCalendarLastSyncedAt(syncedAt);
+      setGoogleStatus((current) =>
+        `${current?.replace(/ Syncing calendar\.\.\.$/, "") ?? "Sync complete."} Calendar synced.`,
+      );
+    } catch (err) {
+      if (isGoogleApiDisabledError(err)) {
+        openEnableApiModal(err);
+        setGoogleStatus(null);
+      } else {
+        setError(err instanceof Error ? err.message : "Google sync failed.");
+        setGoogleStatus(null);
+      }
     } finally {
       setGoogleSyncing(false);
+    }
+  }
+
+  async function handleGoogleDisconnect() {
+    if (!user) return;
+
+    setGoogleDisconnecting(true);
+    setError(null);
+
+    try {
+      await deleteGoogleIntegration(user.uid);
+      setGoogleConnectedAt(null);
+      setGoogleLastSyncedAt(null);
+      setGoogleCalendarLastSyncedAt(null);
+      setGoogleImportCount(null);
+      setGoogleScopes([]);
+      setGoogleAccessToken(null);
+      setGoogleStatus("Google disconnected.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not disconnect Google.",
+      );
+    } finally {
+      setGoogleDisconnecting(false);
+    }
+  }
+
+  async function handleLinkedInDisconnect() {
+    if (!user) return;
+
+    setLinkedinDisconnecting(true);
+    setError(null);
+
+    try {
+      await deleteFileImportMeta(user.uid, "linkedin");
+      setLinkedinLastSyncedAt(null);
+      setLinkedinImportCount(null);
+      setLinkedinStatus("LinkedIn import history cleared.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not disconnect LinkedIn.",
+      );
+    } finally {
+      setLinkedinDisconnecting(false);
+    }
+  }
+
+  async function handleVcfDisconnect() {
+    if (!user) return;
+
+    setVcfDisconnecting(true);
+    setError(null);
+
+    try {
+      await deleteFileImportMeta(user.uid, "vcf");
+      setVcfLastSyncedAt(null);
+      setVcfImportCount(null);
+      setVcfStatus("Phone contacts import history cleared.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not clear phone import.",
+      );
+    } finally {
+      setVcfDisconnecting(false);
     }
   }
 
@@ -413,43 +809,47 @@ export default function IntegrationsPanel() {
 
           <ImportStatus message={hubspotStatus} loading={hubspotSyncing} />
 
-          <div className="flex flex-wrap items-center gap-3">
+          {hubspotConnected ? (
+            <ConnectedBanner
+              title="HubSpot is connected"
+              detail={formatConnectedDetail(
+                hubspotConnectedAt,
+                hubspotLastSyncedAt,
+              )}
+            />
+          ) : null}
+
+          {hubspotConnected ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => void handleSaveHubSpotToken()}
+                disabled={hubspotSaving || !token.trim()}
+                className="h-10"
+              >
+                {hubspotSaving ? "Saving..." : "Update Token"}
+              </Button>
+              <IntegrationActionButtons
+                connected
+                connectLabel="Save Token & Connect"
+                connecting={hubspotSaving}
+                syncing={hubspotSyncing}
+                disconnecting={hubspotDisconnecting}
+                onConnect={() => void handleSaveHubSpotToken()}
+                onSync={() => void handleHubSpotSync()}
+                onDisconnect={() => void handleHubSpotDisconnect()}
+                syncDisabled={!token.trim()}
+              />
+            </div>
+          ) : (
             <Button
               onClick={() => void handleSaveHubSpotToken()}
-              disabled={hubspotSaving || !token.trim()}
+              disabled={hubspotSaving || !token.trim() || loading}
               className="h-10"
             >
-              {hubspotSaving ? "Saving..." : "Save Token"}
+              {hubspotSaving ? "Saving..." : "Save Token & Connect"}
             </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => void handleHubSpotSync()}
-              disabled={hubspotSyncing || !token.trim()}
-              className="h-10"
-            >
-              {hubspotSyncing ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="size-4" />
-                  Sync Now
-                </>
-              )}
-            </Button>
-          </div>
-
-          {hubspotLastSyncedAt ? (
-            <p className="text-xs text-muted-foreground">
-              Last synced{" "}
-              {formatDistanceToNow(new Date(hubspotLastSyncedAt), {
-                addSuffix: true,
-              })}
-            </p>
-          ) : null}
+          )}
         </div>
       </IntegrationCard>
 
@@ -465,7 +865,7 @@ export default function IntegrationsPanel() {
         <p className="mt-2 max-w-md text-xs leading-relaxed text-muted-foreground/80">
           In Google Cloud Console, enable{" "}
           <a
-            href="https://console.cloud.google.com/apis/library/people.googleapis.com"
+            href={GOOGLE_PEOPLE_API_ENABLE_URL}
             target="_blank"
             rel="noreferrer"
             className="font-medium text-foreground underline-offset-2 hover:underline"
@@ -474,7 +874,7 @@ export default function IntegrationsPanel() {
           </a>
           {" "}and{" "}
           <a
-            href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com"
+            href={GOOGLE_CALENDAR_API_ENABLE_URL}
             target="_blank"
             rel="noreferrer"
             className="font-medium text-foreground underline-offset-2 hover:underline"
@@ -503,6 +903,22 @@ export default function IntegrationsPanel() {
                 })}
               </p>
             ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handleGoogleTestConnection("contacts")}
+              disabled={testingGoogleService === "contacts" || googleConnecting}
+              className="mt-2 h-8"
+            >
+              {testingGoogleService === "contacts" ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                "Test connection"
+              )}
+            </Button>
           </div>
 
           <div className="rounded-lg border border-border/60 bg-background/50 px-3 py-2">
@@ -522,28 +938,64 @@ export default function IntegrationsPanel() {
                 Meetings appear on Dashboard and Calendar
               </p>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handleGoogleTestConnection("calendar")}
+              disabled={testingGoogleService === "calendar" || googleConnecting}
+              className="mt-2 h-8"
+            >
+              {testingGoogleService === "calendar" ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                "Test connection"
+              )}
+            </Button>
           </div>
         </div>
 
         <div className="mt-6 space-y-4">
-          <ImportStatus message={googleStatus} loading={googleSyncing} />
+          <ImportStatus message={googleStatus} loading={googleSyncing || googleConnecting} />
 
-          <Button
-            onClick={() => void handleGoogleConnectAndImport()}
-            disabled={googleSyncing || loading}
-            className="h-10"
-          >
-            {googleSyncing ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              "Connect Google"
-            )}
-          </Button>
+          {googleConnected ? (
+            <ConnectedBanner
+              title="Google is connected"
+              detail={formatConnectedDetail(
+                googleConnectedAt,
+                googleLastSyncedAt ?? googleCalendarLastSyncedAt,
+              )}
+            />
+          ) : (
+            <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+              Note: After connecting, Google may ask you to enable a couple of
+              services in Cloud Console. This is normal and only happens once.
+            </p>
+          )}
+
+          <IntegrationActionButtons
+            connected={googleConnected}
+            connectLabel="Connect Google"
+            connecting={googleConnecting}
+            syncing={googleSyncing}
+            disconnecting={googleDisconnecting}
+            onConnect={() => void handleGoogleConnect()}
+            onSync={() => void handleGoogleSync()}
+            onDisconnect={() => void handleGoogleDisconnect()}
+            connectDisabled={loading}
+          />
         </div>
       </IntegrationCard>
+
+      <EnableApiModal
+        open={enableApiModalOpen}
+        onOpenChange={setEnableApiModalOpen}
+        service={enableApiService}
+        enableUrl={enableApiUrl}
+        onTestAgain={() => runGoogleConnectionTest(enableApiService)}
+      />
 
       <IntegrationCard>
         <div className="flex flex-wrap items-center gap-3">
@@ -553,6 +1005,7 @@ export default function IntegrationsPanel() {
           <span className="text-sm font-semibold text-foreground">
             LinkedIn Connections
           </span>
+          <IntegrationStatusBadge connected={linkedinConnected} />
         </div>
         <p className="mt-3 max-w-md text-sm text-muted-foreground">
           Import your LinkedIn connections via CSV export.
@@ -567,6 +1020,13 @@ export default function IntegrationsPanel() {
         </ol>
 
         <div className="mt-6 space-y-4">
+          {linkedinConnected ? (
+            <ConnectedBanner
+              title="LinkedIn import is connected"
+              detail={formatConnectedDetail(null, linkedinLastSyncedAt)}
+            />
+          ) : null}
+
           <Input
             ref={linkedinInputRef}
             type="file"
@@ -588,13 +1048,25 @@ export default function IntegrationsPanel() {
             </p>
           ) : null}
 
-          {linkedinLastSyncedAt ? (
-            <p className="text-xs text-muted-foreground">
-              Last imported{" "}
-              {formatDistanceToNow(new Date(linkedinLastSyncedAt), {
-                addSuffix: true,
-              })}
-            </p>
+          {linkedinConnected ? (
+            <Button
+              variant="outline"
+              onClick={() => void handleLinkedInDisconnect()}
+              disabled={linkedinDisconnecting}
+              className="h-10 text-destructive hover:text-destructive"
+            >
+              {linkedinDisconnecting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Disconnecting...
+                </>
+              ) : (
+                <>
+                  <Unplug className="size-4" />
+                  Disconnect
+                </>
+              )}
+            </Button>
           ) : null}
         </div>
       </IntegrationCard>
@@ -607,6 +1079,7 @@ export default function IntegrationsPanel() {
           <span className="text-sm font-semibold text-foreground">
             Phone Contacts
           </span>
+          <IntegrationStatusBadge connected={vcfConnected} />
         </div>
         <p className="mt-3 max-w-md text-sm text-muted-foreground">
           Import contacts exported from your phone as a VCF file.
@@ -619,6 +1092,13 @@ export default function IntegrationsPanel() {
         </div>
 
         <div className="mt-6 space-y-4">
+          {vcfConnected ? (
+            <ConnectedBanner
+              title="Phone contacts import is connected"
+              detail={formatConnectedDetail(null, vcfLastSyncedAt)}
+            />
+          ) : null}
+
           <Input
             ref={vcfInputRef}
             type="file"
@@ -639,11 +1119,25 @@ export default function IntegrationsPanel() {
             </p>
           ) : null}
 
-          {vcfLastSyncedAt ? (
-            <p className="text-xs text-muted-foreground">
-              Last imported{" "}
-              {formatDistanceToNow(new Date(vcfLastSyncedAt), { addSuffix: true })}
-            </p>
+          {vcfConnected ? (
+            <Button
+              variant="outline"
+              onClick={() => void handleVcfDisconnect()}
+              disabled={vcfDisconnecting}
+              className="h-10 text-destructive hover:text-destructive"
+            >
+              {vcfDisconnecting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Disconnecting...
+                </>
+              ) : (
+                <>
+                  <Unplug className="size-4" />
+                  Disconnect
+                </>
+              )}
+            </Button>
           ) : null}
         </div>
       </IntegrationCard>

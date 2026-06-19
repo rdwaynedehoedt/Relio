@@ -1,4 +1,8 @@
 import {
+  GOOGLE_API_DISABLED_CODE,
+  googleApiDisabledFromPayload,
+} from "@/lib/google-api-errors";
+import {
   addContact,
   getContactByEmail,
   getContactByGoogleId,
@@ -146,9 +150,16 @@ export async function syncGoogleContacts(
     contacts?: GoogleImportContact[];
     total?: number;
     error?: string;
+    code?: string;
+    activationUrl?: string;
+    serviceTitle?: string;
   };
 
   if (!response.ok) {
+    if (data.code === GOOGLE_API_DISABLED_CODE) {
+      throw googleApiDisabledFromPayload("contacts", data);
+    }
+
     throw new Error(data.error ?? "Google Contacts import failed.");
   }
 
