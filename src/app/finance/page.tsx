@@ -276,7 +276,7 @@ export default function FinancePage() {
     await logActivity(
       user.uid,
       "transaction_added",
-      `Added transaction — ${data.category} ${formatMoney(data.amount, wallet.currency)}`,
+      `Added transaction ${data.category} ${formatMoney(data.amount, wallet.currency)}`,
     );
   }
 

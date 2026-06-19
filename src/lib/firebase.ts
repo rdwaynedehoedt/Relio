@@ -47,7 +47,7 @@ export const GOOGLE_CALENDAR_SCOPE =
 export const GOOGLE_CALENDAR_EVENTS_SCOPE =
   "https://www.googleapis.com/auth/calendar.events";
 
-/** Basic Google sign-in only — no contacts or other sensitive scopes. */
+/** Basic Google sign-in only no contacts or other sensitive scopes. */
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
 

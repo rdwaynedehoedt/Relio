@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { DashboardMockup } from "@/components/landing/LandingMockups";
+import { scrollToLandingSection } from "@/lib/landing-scroll";
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
 
@@ -21,7 +22,7 @@ export function LandingHero() {
           transition={{ duration: 0.5, ease: easeOut }}
         >
           <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-3.5 py-1.5 text-xs text-neutral-600">
-            ✦ Now in early access
+            ✦ Google Calendar & Contacts sync
           </span>
         </motion.div>
 
@@ -43,7 +44,8 @@ export function LandingHero() {
           className="mt-6 max-w-[520px] text-base leading-relaxed text-neutral-500 sm:text-lg"
         >
           Relio is your personal OS for relationships, finances, and life goals.
-          Everything you need, nothing you don&apos;t.
+          Sync Google Calendar, import contacts from anywhere, and see today&apos;s
+          meetings on your dashboard.
         </motion.p>
 
         <motion.div
@@ -58,12 +60,13 @@ export function LandingHero() {
           >
             Get started free
           </Link>
-          <a
-            href="#features"
-            className="inline-flex h-11 items-center justify-center rounded-full border border-neutral-200 px-6 text-sm font-medium text-[#0a0a0a] transition-colors hover:bg-neutral-50"
+          <button
+            type="button"
+            onClick={() => scrollToLandingSection("integrations")}
+            className="inline-flex h-11 items-center justify-center rounded-full border border-neutral-200 px-6 text-sm font-medium text-[#0a0a0a] transition-all duration-300 hover:border-neutral-300 hover:bg-neutral-50 active:scale-[0.98]"
           >
-            See how it works
-          </a>
+            See integrations
+          </button>
         </motion.div>
 
         <motion.p

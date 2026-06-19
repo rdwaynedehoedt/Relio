@@ -92,7 +92,7 @@ export function parseGoogleApiDisabledError(
       };
     }
   } catch {
-    // Not JSON — fall through.
+    // Not JSON fall through.
   }
 
   return null;

@@ -516,7 +516,7 @@ export default function IntegrationsPanel() {
       await updateGoogleCalendarLastSynced(user.uid);
 
       setGoogleStatus(
-        "Google connected. Contacts and Calendar are ready — use Sync now to import.",
+        "Google connected. Contacts and Calendar are ready use Sync now to import.",
       );
     } catch (err) {
       setError(

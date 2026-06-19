@@ -82,7 +82,7 @@ export default function EnableApiModal({
               <Check className="size-6" />
             </div>
             <p className="text-base font-medium text-foreground">
-              Connected — try importing/syncing now
+              Connected try importing/syncing now
             </p>
           </div>
         ) : (

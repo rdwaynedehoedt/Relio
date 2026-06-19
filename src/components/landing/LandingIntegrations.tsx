@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { IntegrationsMockup } from "@/components/landing/LandingMockups";
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
 
@@ -48,34 +49,91 @@ function IPhoneLogo({ className }: { className?: string }) {
   );
 }
 
-const integrations = [
-  { name: "HubSpot", Logo: HubSpotLogo, color: "hover:text-[#ff7a59]" },
-  { name: "Google", Logo: GoogleLogo, color: "hover:opacity-100" },
-  { name: "LinkedIn", Logo: LinkedInLogo, color: "hover:text-[#0a66c2]" },
-  { name: "iPhone", Logo: IPhoneLogo, color: "hover:text-[#0a0a0a]" },
+const integrationCards = [
+  {
+    name: "Google",
+    Logo: GoogleLogo,
+    summary: "Contacts + Calendar in one connection",
+    points: [
+      "Import Google Contacts",
+      "Sync calendar events & today's meetings",
+      "Match attendees to your CRM",
+    ],
+  },
+  {
+    name: "HubSpot",
+    Logo: HubSpotLogo,
+    summary: "Pull your pipeline into Relio",
+    points: [
+      "Sync contacts and companies",
+      "Private app token you stay in control",
+      "Disconnect anytime",
+    ],
+  },
+  {
+    name: "LinkedIn",
+    Logo: LinkedInLogo,
+    summary: "Your network, imported",
+    points: [
+      "Upload your connections CSV",
+      "Deduplicate against existing contacts",
+      "Track import history",
+    ],
+  },
+  {
+    name: "Phone",
+    Logo: IPhoneLogo,
+    summary: "VCF from iPhone or Android",
+    points: [
+      "Export contacts as vCard",
+      "Upload in Settings",
+      "Works offline no API needed",
+    ],
+  },
 ];
 
 export function LandingIntegrations() {
   return (
-    <section className="bg-white py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-5 text-center sm:px-8">
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.5, ease: easeOut }}
-          className="text-2xl font-medium tracking-tight text-[#0a0a0a] sm:text-3xl"
-        >
-          Connects to the tools you already use
-        </motion.h2>
+    <section id="integrations" className="bg-neutral-50 py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.5, ease: easeOut }}
+          >
+            <h2 className="text-3xl font-medium tracking-tight text-[#0a0a0a] sm:text-4xl">
+              Connects to the tools you already use
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-neutral-500">
+              Link Google, HubSpot, LinkedIn, or your phone contacts in
+              Settings → Integrations. Sync when you want. Test each connection
+              before you import.
+            </p>
+            <p className="mt-4 text-sm text-neutral-400">
+              Google requires a one-time Cloud Console setup Relio walks you
+              through it with step-by-step guidance if anything is missing.
+            </p>
+          </motion.div>
 
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-10 sm:gap-14">
-          {integrations.map((item, index) => {
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.5, ease: easeOut, delay: 0.1 }}
+          >
+            <IntegrationsMockup />
+          </motion.div>
+        </div>
+
+        <div className="mt-16 grid gap-4 sm:grid-cols-2">
+          {integrationCards.map((item, index) => {
             const Logo = item.Logo;
             return (
               <motion.div
                 key={item.name}
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{
@@ -83,10 +141,30 @@ export function LandingIntegrations() {
                   ease: easeOut,
                   delay: index * 0.08,
                 }}
-                className={`group flex flex-col items-center gap-2 text-neutral-400 transition-colors ${item.color}`}
+                className="rounded-2xl border border-neutral-200/80 bg-white p-6"
               >
-                <Logo className="size-8 opacity-60 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0 sm:size-10" />
-                <span className="text-xs text-neutral-400">{item.name}</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50">
+                    <Logo className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium text-[#0a0a0a]">
+                      {item.name}
+                    </h3>
+                    <p className="text-sm text-neutral-500">{item.summary}</p>
+                  </div>
+                </div>
+                <ul className="mt-4 space-y-2">
+                  {item.points.map((point) => (
+                    <li
+                      key={point}
+                      className="flex items-start gap-2 text-sm text-neutral-500"
+                    >
+                      <span className="mt-1.5 size-1 shrink-0 rounded-full bg-neutral-300" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
             );
           })}

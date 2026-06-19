@@ -127,7 +127,7 @@ export async function saveImportedContacts(
   }
 
   onProgress?.(
-    `Import complete — ${imported} imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
+    `Import complete ${imported} imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
   );
 
   return { imported, skipped, syncedAt };

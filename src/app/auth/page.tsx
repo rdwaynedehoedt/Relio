@@ -125,7 +125,7 @@ export default function AuthPage() {
           <p className="mt-3 text-sm leading-relaxed text-neutral-500 sm:text-base">
             {mode === "sign-in"
               ? "Sign in to your personal OS for relationships, finances, and life."
-              : "Set up your Relio account in seconds. Email and password — that's it."}
+              : "Set up your Relio account in seconds. Email and password that's it."}
           </p>
         </motion.div>
 

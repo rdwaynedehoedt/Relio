@@ -20,16 +20,16 @@ console.log(`
 Add ONE of these to Vercel → Project → Settings → Environment Variables
 (Production, Preview, and Development):
 
-Option A — recommended (base64, no escaping issues):
+Option A recommended (base64, no escaping issues):
   Name:  FIREBASE_SERVICE_ACCOUNT_JSON_BASE64
   Value: ${base64}
 
-Option B — raw JSON (single line):
+Option B raw JSON (single line):
   Name:  FIREBASE_SERVICE_ACCOUNT_JSON
   Value: ${minified}
 
 Also keep locally in .env.local (same as Option A):
   FIREBASE_SERVICE_ACCOUNT_JSON_BASE64=${base64}
 
-Remove GOOGLE_APPLICATION_CREDENTIALS from Vercel — file paths do not work there.
+Remove GOOGLE_APPLICATION_CREDENTIALS from Vercel file paths do not work there.
 `);

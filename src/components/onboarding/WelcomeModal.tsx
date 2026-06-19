@@ -141,7 +141,7 @@ export default function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
                 What will you use Relio for?
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                You can use all of these — pick what matters most
+                You can use all of these pick what matters most
               </p>
 
               <div className="mt-5 space-y-2">

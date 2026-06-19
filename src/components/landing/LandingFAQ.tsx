@@ -14,12 +14,12 @@ const faqs = [
   {
     question: "Is Relio really free?",
     answer:
-      "Yes — completely free, forever. No credit card, no trial period, no hidden tiers.",
+      "Yes completely free, forever. No credit card, no trial period, no hidden tiers.",
   },
   {
     question: "How is this different from HubSpot or Notion?",
     answer:
-      "Relio is personal. HubSpot is for teams and sales pipelines. Notion is for docs. Relio is for you — your contacts, your money, your goals, all linked.",
+      "Relio is personal. HubSpot is for teams and sales pipelines. Notion is for docs. Relio is for you your contacts, your money, your goals, all linked.",
   },
   {
     question: "Is my data safe?",
@@ -29,17 +29,27 @@ const faqs = [
   {
     question: "Can I import my existing contacts?",
     answer:
-      "Yes — import from HubSpot, Google Contacts, LinkedIn CSV, or a VCF file from your phone.",
+      "Yes import from HubSpot, Google Contacts, LinkedIn CSV, or a VCF file from your phone. Connect Google once to sync both Contacts and Calendar.",
+  },
+  {
+    question: "Does Relio sync with Google Calendar?",
+    answer:
+      "Yes. Connect Google in Settings → Integrations to import contacts and sync your calendar. Today's meetings appear on your dashboard, and the Calendar page shows a week view with attendees matched to your contacts.",
+  },
+  {
+    question: "What if Google integration doesn't work right away?",
+    answer:
+      "Google requires a one-time setup in Cloud Console (People API and Calendar API). Relio includes a Test connection button and guided steps that tell you exactly what to enable if something is missing.",
   },
   {
     question: "Does it work on mobile?",
     answer:
-      "Yes — Relio is a PWA. Open it in Safari on iPhone and add it to your home screen.",
+      "Yes Relio is a PWA. Open it in Safari on iPhone and add it to your home screen.",
   },
   {
     question: "What currencies does the finance tracker support?",
     answer:
-      "LKR, USD, GBP, AED, and AUD — with live mid-market exchange rates updated daily.",
+      "LKR, USD, GBP, AED, and AUD with live mid-market exchange rates updated daily.",
   },
 ];
 

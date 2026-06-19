@@ -1,4 +1,4 @@
-# Google Cloud API Setup — Relio
+# Google Cloud API Setup Relio
 
 This is a ONE-TIME setup per Google Cloud project.
 If you ever create a new Firebase/Google Cloud project for Relio, redo this checklist.
@@ -46,7 +46,7 @@ Any NEW Google API (Drive, Gmail, Sheets, etc.) requires this same two-step proc
 
    `https://console.cloud.google.com/apis/library/[API_NAME]?project=828122186689`
 
-## Quick reference — common Google APIs
+## Quick reference common Google APIs
 
 | API | Enable URL pattern |
 |-----|-------------------|

@@ -8,9 +8,9 @@ import { LandingIntegrations } from "@/components/landing/LandingIntegrations";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 
 export const metadata: Metadata = {
-  title: "Relio — Your personal OS for relationships, finances, and life",
+  title: "Relio Your personal OS for relationships, finances, and life",
   description:
-    "Remember everyone that matters. Relio is your personal OS for relationships, finances, and life goals.",
+    "Remember everyone that matters. Sync Google Contacts & Calendar, import from HubSpot and LinkedIn, and manage relationships, finances, and life goals in one place.",
 };
 
 export default function HomePage() {

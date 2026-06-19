@@ -150,7 +150,7 @@ export async function syncHubSpotData(
   }
 
   onProgress?.(
-    `Sync complete — ${contactsImported} contacts, ${companiesImported} companies imported`,
+    `Sync complete ${contactsImported} contacts, ${companiesImported} companies imported`,
   );
 
   return { contactsImported, companiesImported, syncedAt };

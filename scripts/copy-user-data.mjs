@@ -383,7 +383,7 @@ Setup:
 
   console.log(
     args.dryRun
-      ? "\nDry run complete — no data was written."
+      ? "\nDry run complete no data was written."
       : "\nDone! Sign in as the target user to verify your data.",
   );
 }

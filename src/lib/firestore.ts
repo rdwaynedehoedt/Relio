@@ -793,7 +793,7 @@ export async function addFixedDeposit(
   await logActivity(
     fd.userId,
     "fd_added",
-    `Added FD — ${fd.bankName} ${amountLabel}`,
+    `Added FD ${fd.bankName} ${amountLabel}`,
   );
 
   return saved;

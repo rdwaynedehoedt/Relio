@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   addDays,
   eachDayOfInterval,
@@ -13,11 +14,13 @@ import { formatDistanceToNow } from "date-fns";
 import AuthGuard from "@/components/AuthGuard";
 import EventDetailDialog from "@/components/calendar/EventDetailDialog";
 import WeekDayGrid from "@/components/calendar/WeekDayGrid";
+import GoogleApiSetupPrompt from "@/components/settings/GoogleApiSetupPrompt";
 import { createContactFromAttendee } from "@/lib/calendar-utils";
 import Sidebar from "@/components/Sidebar";
 import SidebarInset from "@/components/SidebarInset";
 import { SidebarProvider } from "@/hooks/useSidebar";
-import { Button } from "@/components/ui/button";
+import { useGoogleApiSetup } from "@/hooks/useGoogleApiSetup";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import {
   type CalendarViewMode,
@@ -60,28 +63,15 @@ export default function CalendarPage() {
     [view, anchorDate],
   );
 
-  const days = useMemo(() => {
-    if (view === "month") {
-      return eachDayOfInterval({ start: viewRange.start, end: viewRange.end });
-    }
-
-    if (view === "day") {
-      return [anchorDate];
-    }
-
-    return eachDayOfInterval({
-      start: anchorDate,
-      end: addDays(anchorDate, 6),
-    });
-  }, [view, anchorDate, viewRange]);
-
-  const visibleEvents = useMemo(
-    () => filterEventsForRange(events, viewRange.start, viewRange.end),
-    [events, viewRange],
-  );
+  const getStoredAccessToken = useCallback(async () => accessToken, [accessToken]);
 
   const loadEvents = useCallback(
-    async (token: string, userId: string, userContacts: Contact[], userCompanies: Company[]) => {
+    async (
+      token: string,
+      userId: string,
+      userContacts: Contact[],
+      userCompanies: Company[],
+    ) => {
       const result = await loadCalendarEventsForUser(
         token,
         viewRange.start,
@@ -108,6 +98,41 @@ export default function CalendarPage() {
       return true;
     },
     [viewRange],
+  );
+
+  const {
+    apiSetupNeeded,
+    setApiSetupNeeded,
+    showSetupModal,
+    handleGoogleApiError,
+    enableApiModal,
+  } = useGoogleApiSetup(getStoredAccessToken, {
+    onTestSuccess: async () => {
+      if (!user || !accessToken) return;
+
+      await loadEvents(accessToken, user.uid, contacts, companies);
+      setApiSetupNeeded(false);
+    },
+  });
+
+  const days = useMemo(() => {
+    if (view === "month") {
+      return eachDayOfInterval({ start: viewRange.start, end: viewRange.end });
+    }
+
+    if (view === "day") {
+      return [anchorDate];
+    }
+
+    return eachDayOfInterval({
+      start: anchorDate,
+      end: addDays(anchorDate, 6),
+    });
+  }, [view, anchorDate, viewRange]);
+
+  const visibleEvents = useMemo(
+    () => filterEventsForRange(events, viewRange.start, viewRange.end),
+    [events, viewRange],
   );
 
   useEffect(() => {
@@ -138,16 +163,19 @@ export default function CalendarPage() {
             userContacts,
             userCompanies,
           );
+          setApiSetupNeeded(false);
         }
       } catch (error) {
-        console.error("Failed to load calendar:", error);
+        if (!handleGoogleApiError(error, "calendar")) {
+          console.error("Failed to load calendar:", error);
+        }
       } finally {
         setLoading(false);
       }
     }
 
     void init();
-  }, [user, loadEvents]);
+  }, [user, loadEvents, handleGoogleApiError, setApiSetupNeeded]);
 
   async function handleConnect() {
     if (!user) return;
@@ -160,6 +188,7 @@ export default function CalendarPage() {
       setAccessToken(token);
       const now = new Date().toISOString();
       setConnectedAt(now);
+      setApiSetupNeeded(false);
 
       const userContacts = await getContacts(user.uid);
       const userCompanies = await getCompanies(user.uid);
@@ -169,7 +198,9 @@ export default function CalendarPage() {
       await loadEvents(token, user.uid, userContacts, userCompanies);
       await logActivity(user.uid, "calendar_connected", "Connected Google Calendar");
     } catch (error) {
-      console.error("Failed to connect Google Calendar:", error);
+      if (!handleGoogleApiError(error, "calendar")) {
+        console.error("Failed to connect Google Calendar:", error);
+      }
     } finally {
       setConnecting(false);
     }
@@ -180,9 +211,14 @@ export default function CalendarPage() {
 
     setRefreshing(true);
     try {
-      await loadEvents(accessToken, user.uid, contacts, companies);
+      const ok = await loadEvents(accessToken, user.uid, contacts, companies);
+      if (ok) {
+        setApiSetupNeeded(false);
+      }
     } catch (error) {
-      console.error("Failed to refresh calendar:", error);
+      if (!handleGoogleApiError(error, "calendar")) {
+        console.error("Failed to refresh calendar:", error);
+      }
     } finally {
       setRefreshing(false);
     }
@@ -229,19 +265,31 @@ export default function CalendarPage() {
 
                 <div className="flex flex-wrap items-center gap-2">
                   {!accessToken ? (
-                    <Button onClick={() => void handleConnect()} disabled={connecting}>
-                      {connecting ? (
-                        <>
-                          <Loader2 className="size-4 animate-spin" />
-                          Connecting...
-                        </>
-                      ) : (
-                        <>
-                          <Calendar className="size-4" />
-                          Connect Google Calendar
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href="/settings?section=integrations"
+                        className={buttonVariants({ size: "default" })}
+                      >
+                        Connect in Settings
+                      </Link>
+                      <Button
+                        variant="outline"
+                        onClick={() => void handleConnect()}
+                        disabled={connecting}
+                      >
+                        {connecting ? (
+                          <>
+                            <Loader2 className="size-4 animate-spin" />
+                            Connecting...
+                          </>
+                        ) : (
+                          <>
+                            <Calendar className="size-4" />
+                            Connect Google
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   ) : (
                     <>
                       <div className="text-right text-xs text-muted-foreground">
@@ -341,9 +389,28 @@ export default function CalendarPage() {
                   Loading calendar...
                 </p>
               ) : !accessToken ? (
-                <p className="mt-12 text-center text-sm text-muted-foreground">
-                  Connect Google Calendar to view your events.
-                </p>
+                <div className="mt-12 space-y-3 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Connect Google to view your calendar events in Relio.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    After connecting, you may need a one-time Google Cloud setup.
+                    Relio will guide you through it.
+                  </p>
+                  <Link
+                    href="/settings?section=integrations"
+                    className={buttonVariants()}
+                  >
+                    Go to Settings
+                  </Link>
+                </div>
+              ) : apiSetupNeeded ? (
+                <div className="mx-auto mt-12 max-w-md">
+                  <GoogleApiSetupPrompt
+                    service="calendar"
+                    onFixSetup={() => showSetupModal("calendar")}
+                  />
+                </div>
               ) : needsReconnect ? (
                 <div className="mt-12 flex flex-col items-center gap-3 text-center">
                   <p className="text-sm text-muted-foreground">
@@ -384,6 +451,8 @@ export default function CalendarPage() {
           onOpenChange={setDetailOpen}
           onAddContact={(email) => void handleAddContact(email)}
         />
+
+        {enableApiModal}
       </SidebarProvider>
     </AuthGuard>
   );

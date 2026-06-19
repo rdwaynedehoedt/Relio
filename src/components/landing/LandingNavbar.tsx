@@ -2,12 +2,56 @@
 
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  LANDING_SECTION_IDS,
+  scrollToLandingSection,
+  type LandingSectionId,
+} from "@/lib/landing-scroll";
 import { cn } from "@/lib/utils";
+
+const navItems: { id: LandingSectionId; label: string }[] = [
+  { id: "features", label: "Features" },
+  { id: "integrations", label: "Integrations" },
+];
+
+function NavSectionLink({
+  id,
+  label,
+  active,
+  onNavigate,
+  className,
+}: {
+  id: LandingSectionId;
+  label: string;
+  active: boolean;
+  onNavigate: (id: LandingSectionId) => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(id)}
+      aria-current={active ? "true" : undefined}
+      className={cn(
+        "text-sm transition-colors duration-200",
+        active
+          ? "font-medium text-[#0a0a0a]"
+          : "text-neutral-600 hover:text-[#0a0a0a]",
+        className,
+      )}
+    >
+      {label}
+    </button>
+  );
+}
 
 export function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<LandingSectionId | null>(
+    null,
+  );
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -22,6 +66,40 @@ export function LandingNavbar() {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    const sections = LANDING_SECTION_IDS.map((id) =>
+      document.getElementById(id),
+    ).filter((section): section is HTMLElement => section !== null);
+
+    if (sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visible[0]?.target.id) {
+          setActiveSection(visible[0].target.id as LandingSectionId);
+        }
+      },
+      {
+        rootMargin: "-20% 0px -55% 0px",
+        threshold: [0.1, 0.35, 0.6],
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, []);
+
+  const navigateToSection = useCallback((sectionId: LandingSectionId) => {
+    setMobileOpen(false);
+    scrollToLandingSection(sectionId);
+    setActiveSection(sectionId);
+  }, []);
 
   return (
     <header
@@ -39,6 +117,15 @@ export function LandingNavbar() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
+          {navItems.map((item) => (
+            <NavSectionLink
+              key={item.id}
+              id={item.id}
+              label={item.label}
+              active={activeSection === item.id}
+              onNavigate={navigateToSection}
+            />
+          ))}
           <Link
             href="/auth"
             className="text-sm text-neutral-600 transition-colors hover:text-[#0a0a0a]"
@@ -66,6 +153,16 @@ export function LandingNavbar() {
       {mobileOpen ? (
         <div className="border-t border-neutral-200/80 bg-white px-5 py-6 md:hidden">
           <nav className="flex flex-col gap-4">
+            {navItems.map((item) => (
+              <NavSectionLink
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                active={activeSection === item.id}
+                onNavigate={navigateToSection}
+                className="text-left text-base"
+              />
+            ))}
             <Link
               href="/auth"
               className="text-base text-neutral-600"

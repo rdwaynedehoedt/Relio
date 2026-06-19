@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { CalendarPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ScheduleMeetingForm from "@/components/calendar/ScheduleMeetingForm";
 import { PanelSectionLabel } from "@/components/crm-panel";
+import GoogleApiSetupPrompt from "@/components/settings/GoogleApiSetupPrompt";
+import { useGoogleApiSetup } from "@/hooks/useGoogleApiSetup";
 import {
   fetchCalendarEvents,
   formatEventDate,
@@ -40,6 +43,15 @@ export default function MeetingHistory({
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [needsReconnect, setNeedsReconnect] = useState(false);
+
+  const getStoredAccessToken = useCallback(async () => accessToken, [accessToken]);
+
+  const {
+    apiSetupNeeded,
+    showSetupModal,
+    handleGoogleApiError,
+    enableApiModal,
+  } = useGoogleApiSetup(getStoredAccessToken);
 
   useEffect(() => {
     if (!contact.userId || !contact.email) {
@@ -97,14 +109,16 @@ export default function MeetingHistory({
 
         await updateGoogleCalendarLastSynced(userId);
       } catch (error) {
-        console.error("Failed to load meeting history:", error);
+        if (!handleGoogleApiError(error, "calendar")) {
+          console.error("Failed to load meeting history:", error);
+        }
       } finally {
         setLoading(false);
       }
     }
 
     void load();
-  }, [contact, contacts, onContactUpdated]);
+  }, [contact, contacts, onContactUpdated, handleGoogleApiError]);
 
   const upcoming = events.filter((event) => !isPastEvent(event));
   const past = events.filter(isPastEvent);
@@ -115,19 +129,25 @@ export default function MeetingHistory({
 
     if (!accessToken || !contact.email) return;
 
-    const now = new Date();
-    const timeMin = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-    const timeMax = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+    try {
+      const now = new Date();
+      const timeMin = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      const timeMax = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
 
-    const rawEvents = await fetchCalendarEvents(accessToken, timeMin, timeMax);
-    const matched = await matchCalendarEvents(rawEvents, contacts);
-    setEvents(getEventsForContact(matched, contact.email));
+      const rawEvents = await fetchCalendarEvents(accessToken, timeMin, timeMax);
+      const matched = await matchCalendarEvents(rawEvents, contacts);
+      setEvents(getEventsForContact(matched, contact.email));
 
-    await logActivity(
-      contact.userId,
-      "meeting_scheduled",
-      `Scheduled meeting with ${contact.firstName} ${contact.lastName}`,
-    );
+      await logActivity(
+        contact.userId,
+        "meeting_scheduled",
+        `Scheduled meeting with ${contact.firstName} ${contact.lastName}`,
+      );
+    } catch (error) {
+      if (!handleGoogleApiError(error, "calendar")) {
+        console.error("Failed to refresh meeting history:", error);
+      }
+    }
   }
 
   return (
@@ -141,11 +161,31 @@ export default function MeetingHistory({
         </p>
       ) : !accessToken ? (
         <p className="px-2 py-2 text-[13px] text-muted-foreground/70">
-          Connect Google Calendar in Settings to see meeting history.
+          <Link
+            href="/settings?section=integrations"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Connect Google
+          </Link>{" "}
+          in Settings to see meeting history.
         </p>
+      ) : apiSetupNeeded ? (
+        <div className="px-2 py-1">
+          <GoogleApiSetupPrompt
+            service="calendar"
+            onFixSetup={() => showSetupModal("calendar")}
+          />
+        </div>
       ) : needsReconnect ? (
         <p className="px-2 py-2 text-[13px] text-muted-foreground/70">
-          Google Calendar connection expired. Reconnect in Settings.
+          Google Calendar connection expired.{" "}
+          <Link
+            href="/settings?section=integrations"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Reconnect in Settings
+          </Link>
+          .
         </p>
       ) : (
         <div className="space-y-4 px-2 pb-2">
@@ -223,6 +263,8 @@ export default function MeetingHistory({
           )}
         </div>
       )}
+
+      {enableApiModal}
     </>
   );
 }

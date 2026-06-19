@@ -173,7 +173,7 @@ export default function DashboardPage() {
 
           <SidebarInset className="min-h-screen">
           <div className="mx-auto max-w-7xl px-8 py-8">
-            {/* Section 1 — Morning Briefing */}
+            {/* Section 1 Morning Briefing */}
             <section className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 {greeting}, {firstName}
@@ -191,7 +191,7 @@ export default function DashboardPage() {
               hasIntegration={hasIntegration}
             />
 
-            {/* Section 2 — Command Center */}
+            {/* Section 2 Command Center */}
             <section className="mt-6 grid gap-4 xl:grid-cols-3">
               <CommandCard title="CRM snapshot" subtitle="Your pipeline at a glance">
                 <div className="grid grid-cols-2 gap-3">
@@ -406,7 +406,7 @@ export default function DashboardPage() {
               <TodayMeetingsCard />
             </section>
 
-            {/* Section 3 — Overview */}
+            {/* Section 3 Overview */}
             <section className="mt-8">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <OverviewStat

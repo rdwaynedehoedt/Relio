@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { PanelSectionLabel } from "@/components/crm-panel";
+import GoogleApiSetupPrompt from "@/components/settings/GoogleApiSetupPrompt";
+import { useGoogleApiSetup } from "@/hooks/useGoogleApiSetup";
 import {
   formatEventDate,
   formatEventTimeRange,
@@ -28,6 +30,16 @@ export default function CompanyMeetings({ company }: CompanyMeetingsProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [connected, setConnected] = useState(false);
   const [needsReconnect, setNeedsReconnect] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
+  const getStoredAccessToken = useCallback(async () => accessToken, [accessToken]);
+
+  const {
+    apiSetupNeeded,
+    showSetupModal,
+    handleGoogleApiError,
+    enableApiModal,
+  } = useGoogleApiSetup(getStoredAccessToken);
 
   useEffect(() => {
     if (!company.userId || !company.id) {
@@ -44,6 +56,7 @@ export default function CompanyMeetings({ company }: CompanyMeetingsProps) {
         if (!integration?.accessToken) return;
 
         setConnected(true);
+        setAccessToken(integration.accessToken);
 
         const [contacts, companies] = await Promise.all([
           getContacts(userId),
@@ -74,14 +87,16 @@ export default function CompanyMeetings({ company }: CompanyMeetingsProps) {
         setEvents(companyEvents);
         await updateGoogleCalendarLastSynced(userId);
       } catch (error) {
-        console.error("Failed to load company meetings:", error);
+        if (!handleGoogleApiError(error, "calendar")) {
+          console.error("Failed to load company meetings:", error);
+        }
       } finally {
         setLoading(false);
       }
     }
 
     void load();
-  }, [company]);
+  }, [company, handleGoogleApiError]);
 
   return (
     <>
@@ -94,11 +109,31 @@ export default function CompanyMeetings({ company }: CompanyMeetingsProps) {
         </p>
       ) : !connected ? (
         <p className="px-2 py-2 text-[13px] text-muted-foreground/70">
-          Connect Google Calendar in Settings to see meetings.
+          <Link
+            href="/settings?section=integrations"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Connect Google
+          </Link>{" "}
+          in Settings to see meetings.
         </p>
+      ) : apiSetupNeeded ? (
+        <div className="px-2 py-1">
+          <GoogleApiSetupPrompt
+            service="calendar"
+            onFixSetup={() => showSetupModal("calendar")}
+          />
+        </div>
       ) : needsReconnect ? (
         <p className="px-2 py-2 text-[13px] text-muted-foreground/70">
-          Google Calendar connection expired. Reconnect in Settings.
+          Google Calendar connection expired.{" "}
+          <Link
+            href="/settings?section=integrations"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Reconnect in Settings
+          </Link>
+          .
         </p>
       ) : events.length === 0 ? (
         <p className="px-2 py-2 text-[13px] text-muted-foreground/70">
@@ -124,6 +159,8 @@ export default function CompanyMeetings({ company }: CompanyMeetingsProps) {
           ))}
         </ul>
       )}
+
+      {enableApiModal}
     </>
   );
 }

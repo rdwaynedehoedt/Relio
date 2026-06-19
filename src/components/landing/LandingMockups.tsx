@@ -88,6 +88,7 @@ export function DashboardMockup({ className }: { className?: string }) {
           <div className="space-y-0.5">
             <SidebarItem label="Dashboard" active />
             <SidebarItem label="Contacts" />
+            <SidebarItem label="Calendar" />
             <SidebarItem label="Finance" />
             <SidebarItem label="Brain" />
             <SidebarItem label="Life Map" />
@@ -105,6 +106,28 @@ export function DashboardMockup({ className }: { className?: string }) {
             <StatCard label="Companies" value="190" />
             <StatCard label="Net worth" value="LKR 12.4M" sub="4 wallets" />
             <StatCard label="Goals" value="6 active" sub="2 due soon" />
+          </div>
+
+          <div className="mt-3 rounded-lg border border-neutral-200/60 bg-white p-3">
+            <p className="text-[9px] font-medium tracking-wide text-neutral-400 uppercase">
+              Today&apos;s meetings
+            </p>
+            <div className="mt-2 space-y-2">
+              <div className="rounded-md bg-neutral-50 px-2 py-1.5">
+                <p className="text-[8px] text-neutral-400">10:00 – 10:30</p>
+                <p className="text-[10px] font-medium text-[#0a0a0a]">
+                  Product sync
+                </p>
+                <p className="text-[8px] text-neutral-500">Sarah Kim · Known contact</p>
+              </div>
+              <div className="rounded-md bg-neutral-50 px-2 py-1.5">
+                <p className="text-[8px] text-neutral-400">2:00 – 2:45</p>
+                <p className="text-[10px] font-medium text-[#0a0a0a]">
+                  Investor catch-up
+                </p>
+                <p className="text-[8px] text-neutral-500">James Miller · Known contact</p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-3 rounded-lg border border-neutral-200/60 bg-white p-3">
@@ -262,6 +285,123 @@ export function BrainMockup() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+export function CalendarMockup() {
+  const days = ["Mon 16", "Tue 17", "Wed 18", "Thu 19", "Fri 20"];
+  const events = [
+    { day: 2, time: "10:00", title: "Product sync", color: "bg-blue-500/15 border-blue-200" },
+    { day: 2, time: "14:00", title: "Investor call", color: "bg-violet-500/15 border-violet-200" },
+    { day: 3, time: "09:30", title: "Team standup", color: "bg-emerald-500/15 border-emerald-200" },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_16px_48px_-16px_rgba(0,0,0,0.12)]">
+      <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
+        <div>
+          <p className="text-sm font-medium text-[#0a0a0a]">Calendar</p>
+          <p className="text-[10px] text-neutral-400">Google Calendar · Week view</p>
+        </div>
+        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+          Connected
+        </span>
+      </div>
+      <div className="grid grid-cols-5 gap-px bg-neutral-100 p-px">
+        {days.map((day, index) => (
+          <div key={day} className="bg-white p-2">
+            <p
+              className={cn(
+                "text-center text-[9px] font-medium",
+                index === 2 ? "text-[#0a0a0a]" : "text-neutral-400",
+              )}
+            >
+              {day}
+            </p>
+            <div className="mt-2 min-h-[100px] space-y-1">
+              {events
+                .filter((event) => event.day === index)
+                .map((event) => (
+                  <div
+                    key={event.title}
+                    className={cn(
+                      "rounded border px-1.5 py-1",
+                      event.color,
+                    )}
+                  >
+                    <p className="text-[8px] text-neutral-500">{event.time}</p>
+                    <p className="text-[9px] font-medium text-[#0a0a0a]">
+                      {event.title}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function IntegrationsMockup() {
+  const rows = [
+    {
+      name: "Google",
+      detail: "Contacts + Calendar",
+      status: "Connected",
+      badges: ["Contacts", "Calendar"],
+    },
+    {
+      name: "HubSpot",
+      detail: "Private app token",
+      status: "Connected",
+      badges: ["Sync"],
+    },
+    {
+      name: "LinkedIn",
+      detail: "CSV import",
+      status: "Ready",
+      badges: ["Import"],
+    },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_16px_48px_-16px_rgba(0,0,0,0.12)]">
+      <div className="border-b border-neutral-100 px-4 py-3">
+        <p className="text-sm font-medium text-[#0a0a0a]">Integrations</p>
+        <p className="text-[10px] text-neutral-400">
+          Connect once · Sync anytime · Test connection
+        </p>
+      </div>
+      <div className="divide-y divide-neutral-100">
+        {rows.map((row) => (
+          <div key={row.name} className="flex items-start justify-between gap-3 px-4 py-3">
+            <div>
+              <p className="text-xs font-medium text-[#0a0a0a]">{row.name}</p>
+              <p className="text-[10px] text-neutral-400">{row.detail}</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {row.badges.map((badge) => (
+                  <span
+                    key={badge}
+                    className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] text-neutral-600"
+                  >
+                    {badge}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-medium text-emerald-700">
+              {row.status}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-neutral-100 bg-neutral-50 px-4 py-2.5">
+        <p className="text-[9px] text-neutral-500">
+          One-time Google Cloud setup · Guided steps if anything is missing
+        </p>
       </div>
     </div>
   );

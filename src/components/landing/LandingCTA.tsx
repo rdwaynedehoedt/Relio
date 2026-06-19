@@ -19,7 +19,7 @@ export function LandingCTA() {
           Start building your personal OS.
         </h2>
         <p className="mt-4 text-base text-neutral-400">
-          Free forever. No credit card required.
+          Free forever. Connect Google, HubSpot, or LinkedIn in minutes.
         </p>
         <Link
           href="/auth"

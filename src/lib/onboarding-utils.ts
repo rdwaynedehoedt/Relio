@@ -25,7 +25,7 @@ export const CONTACTS_ONBOARDING_STEPS: OnboardingStep[] = [
   {
     title: "Your contacts live here",
     description:
-      "Everyone you know is tracked here — people, companies, and your history with them.",
+      "Everyone you know is tracked here people, companies, and your history with them.",
   },
   {
     title: "Import existing contacts",
@@ -45,7 +45,7 @@ export const FINANCE_ONBOARDING_STEPS: OnboardingStep[] = [
   {
     title: "Track money across currencies",
     description:
-      "Relio supports LKR, USD, GBP, AED, and AUD — your net worth in one place.",
+      "Relio supports LKR, USD, GBP, AED, and AUD your net worth in one place.",
   },
   {
     title: "Live exchange rates",
@@ -65,7 +65,7 @@ export const BRAIN_ONBOARDING_STEPS: OnboardingStep[] = [
   {
     title: "Capture what matters",
     description:
-      "Ideas, articles, meeting notes, and decisions — searchable and organised.",
+      "Ideas, articles, meeting notes, and decisions searchable and organised.",
   },
   {
     title: "Save your first note",

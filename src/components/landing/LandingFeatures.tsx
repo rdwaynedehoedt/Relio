@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Brain, Map, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Brain, Calendar, Map, Users, Wallet, type LucideIcon } from "lucide-react";
 import {
   BrainMockup,
+  CalendarMockup,
   ContactsMockup,
   FinanceMockup,
   LifeMapMockup,
@@ -23,28 +24,34 @@ const features: Feature[] = [
   {
     icon: Users,
     headline: "Know everyone. Lose no one.",
-    body: "148 contacts, 190 companies — all searchable, filterable, and linked. Import from HubSpot, Google, LinkedIn or your phone in one click.",
+    body: "Import from HubSpot, Google Contacts, LinkedIn CSV, or your phone. Search, filter, and link every contact to the companies they belong to.",
     visual: <ContactsMockup />,
+  },
+  {
+    icon: Calendar,
+    headline: "Your calendar, linked to your people.",
+    body: "Connect Google once to sync Contacts and Calendar. See today's meetings on your dashboard, match attendees to contacts, and schedule follow-ups from any profile.",
+    visual: <CalendarMockup />,
+    reverse: true,
   },
   {
     icon: Wallet,
     headline: "Your money, across every currency.",
     body: "Track wallets in LKR, USD, GBP, AED and AUD. Live exchange rates. Fixed deposits. Your real net worth, always up to date.",
     visual: <FinanceMockup />,
-    reverse: true,
   },
   {
     icon: Brain,
     headline: "Capture every idea that matters.",
     body: "Rich text notes, article saves with auto-preview, mood tags, and a masonry grid that makes your thinking feel organized.",
     visual: <BrainMockup />,
+    reverse: true,
   },
   {
     icon: Map,
     headline: "Plot your life on a timeline.",
-    body: "From buying a house to traveling the world — set goals, track milestones, and see exactly when you'll get there based on your real savings.",
+    body: "From buying a house to traveling the world set goals, track milestones, and see exactly when you'll get there based on your real savings.",
     visual: <LifeMapMockup />,
-    reverse: true,
   },
 ];
 
