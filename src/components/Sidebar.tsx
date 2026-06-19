@@ -31,11 +31,11 @@ import { cn } from "@/lib/utils";
 const crmItems = [
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/companies", label: "Companies", icon: Building2 },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
 ];
 
 const primaryNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/finance", label: "Finance", icon: Wallet },
   { href: "/brain", label: "Second Brain", icon: Lightbulb },
   { href: "/lifemap", label: "Life Map", icon: Map },
