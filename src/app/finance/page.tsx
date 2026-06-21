@@ -62,6 +62,7 @@ import {
   addTransaction,
   addTransactionsBatch,
   addWallet,
+  deleteFixedDeposit,
   deleteTransaction,
   getFixedDeposits,
   getTransactions,
@@ -239,6 +240,11 @@ export default function FinancePage() {
         (a.maturityDate ?? "").localeCompare(b.maturityDate ?? ""),
       ),
     );
+  }
+
+  async function handleDeleteFixedDeposit(id: string) {
+    await deleteFixedDeposit(id);
+    setFixedDeposits((current) => current.filter((fd) => fd.id !== id));
   }
 
   async function handleCreateTransaction(data: {
@@ -696,7 +702,12 @@ export default function FinancePage() {
               ) : (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {fixedDeposits.map((fd) => (
-                    <FixedDepositCard key={fd.id} fd={fd} rates={rates} />
+                    <FixedDepositCard
+                      key={fd.id}
+                      fd={fd}
+                      rates={rates}
+                      onDelete={handleDeleteFixedDeposit}
+                    />
                   ))}
 
                   <button
@@ -894,9 +905,11 @@ export default function FinancePage() {
 function FixedDepositCard({
   fd,
   rates,
+  onDelete,
 }: {
   fd: FixedDeposit;
   rates: ExchangeRates;
+  onDelete: (id: string) => void;
 }) {
   const progress = getFdProgress(fd.openedDate, fd.maturityDate);
   const principalLkr = convertCurrencyToLkr(
@@ -984,6 +997,19 @@ function FixedDepositCard({
               ? ` · ${formatCurrencyAmount(fd.nextInterestAmount, fd.currency)}`
               : ""}
           </p>
+        </div>
+      ) : null}
+
+      {fd.id ? (
+        <div className="mt-4 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs text-muted-foreground hover:text-destructive"
+            onClick={() => onDelete(fd.id!)}
+          >
+            Delete
+          </Button>
         </div>
       ) : null}
     </div>
