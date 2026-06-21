@@ -3,7 +3,7 @@ export const GOOGLE_CLOUD_PROJECT_NUMBER = "828122186689";
 export type GoogleApiService = "contacts" | "calendar";
 
 export const GOOGLE_PEOPLE_API_ENABLE_URL =
-  `https://console.developers.google.com/apis/api/people.googleapis.com/overview?project=${GOOGLE_CLOUD_PROJECT_NUMBER}`;
+  `https://console.cloud.google.com/apis/api/people.googleapis.com`;
 
 export const GOOGLE_CALENDAR_API_ENABLE_URL =
   `https://console.cloud.google.com/apis/library/calendar-json.googleapis.com?project=${GOOGLE_CLOUD_PROJECT_NUMBER}`;

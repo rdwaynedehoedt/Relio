@@ -773,10 +773,13 @@ export async function addFixedDeposit(
   if (!db) throw new Error("Firestore is not configured.");
 
   const now = new Date().toISOString();
-  const docRef = await addDoc(collection(db, "fixedDeposits"), {
-    ...fd,
-    createdAt: now,
-  });
+  const docRef = await addDoc(
+    collection(db, "fixedDeposits"),
+    omitUndefined({
+      ...fd,
+      createdAt: now,
+    }),
+  );
 
   const saved: FixedDeposit = {
     id: docRef.id,
@@ -807,7 +810,7 @@ export async function updateFixedDeposit(
 
   const { id: _id, createdAt, ...updates } = data;
 
-  await updateDoc(doc(db, "fixedDeposits", id), updates);
+  await updateDoc(doc(db, "fixedDeposits", id), omitUndefined(updates));
 }
 
 export async function deleteFixedDeposit(id: string): Promise<void> {

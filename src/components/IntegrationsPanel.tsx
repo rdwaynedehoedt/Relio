@@ -4,14 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   Check,
-  ExternalLink,
-  Eye,
-  EyeOff,
   Loader2,
   RefreshCw,
   Smartphone,
   Unplug,
 } from "lucide-react";
+import ConnectWizard, { type ConnectWizardType } from "@/components/ConnectWizard";
 import HubSpotLogo from "@/components/HubSpotLogo";
 import EnableApiModal from "@/components/settings/EnableApiModal";
 import { Badge } from "@/components/ui/badge";
@@ -255,7 +253,6 @@ export default function IntegrationsPanel() {
   const { user, connectGoogleContacts } = useAuth();
 
   const [token, setToken] = useState("");
-  const [showToken, setShowToken] = useState(false);
   const [hubspotConnectedAt, setHubspotConnectedAt] = useState<string | null>(null);
   const [hubspotLastSyncedAt, setHubspotLastSyncedAt] = useState<string | null>(null);
   const [googleConnectedAt, setGoogleConnectedAt] = useState<string | null>(null);
@@ -301,6 +298,8 @@ export default function IntegrationsPanel() {
 
   const linkedinInputRef = useRef<HTMLInputElement>(null);
   const vcfInputRef = useRef<HTMLInputElement>(null);
+
+  const [wizardType, setWizardType] = useState<ConnectWizardType | null>(null);
 
   const hubspotConnected = Boolean(token.trim() || hubspotConnectedAt);
   const googleConnected = Boolean(googleConnectedAt);
@@ -740,6 +739,47 @@ export default function IntegrationsPanel() {
     }
   }
 
+  // ── Wizard callbacks ───────────────────────────────────────────────────────
+
+  async function wizardConnectHubSpot(apiToken: string): Promise<void> {
+    if (!user) throw new Error("You must be signed in.");
+    const integration = await saveHubSpotToken(user.uid, apiToken);
+    setToken(apiToken);
+    setHubspotConnectedAt(integration.connectedAt);
+  }
+
+  async function wizardConnectGoogle(): Promise<string | null> {
+    if (!user) throw new Error("You must be signed in.");
+    const accessToken = await connectGoogleContacts();
+    if (!accessToken) throw new Error("Could not get Google access token.");
+    const now = new Date().toISOString();
+    setGoogleConnectedAt(now);
+    setGoogleAccessToken(accessToken);
+    setGoogleScopes(["contacts", "calendar"]);
+    setGoogleCalendarLastSyncedAt(now);
+    await Promise.all([
+      logActivity(user.uid, "calendar_connected", "Connected Google Calendar"),
+      updateGoogleCalendarLastSynced(user.uid),
+    ]);
+    return accessToken;
+  }
+
+  async function wizardImportLinkedIn(file: File): Promise<void> {
+    if (!user) throw new Error("You must be signed in.");
+    const csv = await file.text();
+    const result = await syncLinkedInContacts(user.uid, csv, () => {});
+    setLinkedinLastSyncedAt(result.syncedAt);
+    setLinkedinImportCount(result.imported);
+  }
+
+  async function wizardImportVcf(file: File): Promise<void> {
+    if (!user) throw new Error("You must be signed in.");
+    const content = await file.text();
+    const result = await syncVcfContacts(user.uid, content, () => {});
+    setVcfLastSyncedAt(result.syncedAt);
+    setVcfImportCount(result.imported);
+  }
+
   return (
     <div className="space-y-5">
       {error ? (
@@ -767,46 +807,6 @@ export default function IntegrationsPanel() {
         </div>
 
         <div className="mt-6 space-y-4">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-foreground">
-              Private App Token
-            </span>
-            <div className="relative">
-              <Input
-                type={showToken ? "text" : "password"}
-                value={token}
-                onChange={(event) => setToken(event.target.value)}
-                placeholder="pat-na1-..."
-                className="h-11 pr-11"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowToken((current) => !current)}
-                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showToken ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Get your token from HubSpot → Settings → Integrations → Private
-              Apps.{" "}
-              <a
-                href="https://app.hubspot.com/private-apps"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-2 hover:underline"
-              >
-                Open HubSpot Private Apps
-                <ExternalLink className="size-3" />
-              </a>
-            </p>
-          </label>
-
           <ImportStatus message={hubspotStatus} loading={hubspotSyncing} />
 
           {hubspotConnected ? (
@@ -820,34 +820,24 @@ export default function IntegrationsPanel() {
           ) : null}
 
           {hubspotConnected ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => void handleSaveHubSpotToken()}
-                disabled={hubspotSaving || !token.trim()}
-                className="h-10"
-              >
-                {hubspotSaving ? "Saving..." : "Update Token"}
-              </Button>
-              <IntegrationActionButtons
-                connected
-                connectLabel="Save Token & Connect"
-                connecting={hubspotSaving}
-                syncing={hubspotSyncing}
-                disconnecting={hubspotDisconnecting}
-                onConnect={() => void handleSaveHubSpotToken()}
-                onSync={() => void handleHubSpotSync()}
-                onDisconnect={() => void handleHubSpotDisconnect()}
-                syncDisabled={!token.trim()}
-              />
-            </div>
+            <IntegrationActionButtons
+              connected
+              connectLabel="Connect HubSpot"
+              connecting={false}
+              syncing={hubspotSyncing}
+              disconnecting={hubspotDisconnecting}
+              onConnect={() => setWizardType("hubspot")}
+              onSync={() => void handleHubSpotSync()}
+              onDisconnect={() => void handleHubSpotDisconnect()}
+              syncDisabled={!token.trim()}
+            />
           ) : (
             <Button
-              onClick={() => void handleSaveHubSpotToken()}
-              disabled={hubspotSaving || !token.trim() || loading}
+              onClick={() => setWizardType("hubspot")}
+              disabled={loading}
               className="h-10"
             >
-              {hubspotSaving ? "Saving..." : "Save Token & Connect"}
+              Connect HubSpot
             </Button>
           )}
         </div>
@@ -968,12 +958,7 @@ export default function IntegrationsPanel() {
                 googleLastSyncedAt ?? googleCalendarLastSyncedAt,
               )}
             />
-          ) : (
-            <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
-              Note: After connecting, Google may ask you to enable a couple of
-              services in Cloud Console. This is normal and only happens once.
-            </p>
-          )}
+          ) : null}
 
           <IntegrationActionButtons
             connected={googleConnected}
@@ -981,7 +966,7 @@ export default function IntegrationsPanel() {
             connecting={googleConnecting}
             syncing={googleSyncing}
             disconnecting={googleDisconnecting}
-            onConnect={() => void handleGoogleConnect()}
+            onConnect={() => setWizardType("google")}
             onSync={() => void handleGoogleSync()}
             onDisconnect={() => void handleGoogleDisconnect()}
             connectDisabled={loading}
@@ -1010,14 +995,6 @@ export default function IntegrationsPanel() {
         <p className="mt-3 max-w-md text-sm text-muted-foreground">
           Import your LinkedIn connections via CSV export.
         </p>
-        <ol className="mt-3 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-muted-foreground">
-          <li>
-            Go to LinkedIn → Settings → Data Privacy → Get a copy of your data →
-            Connections
-          </li>
-          <li>Download the CSV file</li>
-          <li>Upload it here</li>
-        </ol>
 
         <div className="mt-6 space-y-4">
           {linkedinConnected ? (
@@ -1027,20 +1004,6 @@ export default function IntegrationsPanel() {
             />
           ) : null}
 
-          <Input
-            ref={linkedinInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            disabled={linkedinSyncing}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void handleLinkedInUpload(file);
-            }}
-            className="h-11 cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1 file:text-sm file:font-medium"
-          />
-
-          <ImportStatus message={linkedinStatus} loading={linkedinSyncing} />
-
           {linkedinImportCount !== null ? (
             <p className="text-xs text-muted-foreground">
               {linkedinImportCount} contact
@@ -1048,26 +1011,38 @@ export default function IntegrationsPanel() {
             </p>
           ) : null}
 
-          {linkedinConnected ? (
+          <ImportStatus message={linkedinStatus} loading={linkedinSyncing} />
+
+          <div className="flex flex-wrap items-center gap-3">
             <Button
-              variant="outline"
-              onClick={() => void handleLinkedInDisconnect()}
-              disabled={linkedinDisconnecting}
-              className="h-10 text-destructive hover:text-destructive"
+              onClick={() => setWizardType("linkedin")}
+              disabled={linkedinSyncing}
+              className="h-10"
             >
-              {linkedinDisconnecting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Disconnecting...
-                </>
-              ) : (
-                <>
-                  <Unplug className="size-4" />
-                  Disconnect
-                </>
-              )}
+              {linkedinConnected ? "Import again" : "Import from LinkedIn"}
             </Button>
-          ) : null}
+
+            {linkedinConnected ? (
+              <Button
+                variant="outline"
+                onClick={() => void handleLinkedInDisconnect()}
+                disabled={linkedinDisconnecting}
+                className="h-10 text-destructive hover:text-destructive"
+              >
+                {linkedinDisconnecting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Disconnecting...
+                  </>
+                ) : (
+                  <>
+                    <Unplug className="size-4" />
+                    Disconnect
+                  </>
+                )}
+              </Button>
+            ) : null}
+          </div>
         </div>
       </IntegrationCard>
 
@@ -1084,12 +1059,6 @@ export default function IntegrationsPanel() {
         <p className="mt-3 max-w-md text-sm text-muted-foreground">
           Import contacts exported from your phone as a VCF file.
         </p>
-        <div className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground">
-          <p>
-            iPhone: Contacts app → select all → Share → export as vCard
-          </p>
-          <p>Android: Contacts app → Export → .vcf file</p>
-        </div>
 
         <div className="mt-6 space-y-4">
           {vcfConnected ? (
@@ -1099,48 +1068,56 @@ export default function IntegrationsPanel() {
             />
           ) : null}
 
-          <Input
-            ref={vcfInputRef}
-            type="file"
-            accept=".vcf,text/vcard"
-            disabled={vcfSyncing}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void handleVcfUpload(file);
-            }}
-            className="h-11 cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1 file:text-sm file:font-medium"
-          />
-
-          <ImportStatus message={vcfStatus} loading={vcfSyncing} />
-
           {vcfImportCount !== null ? (
             <p className="text-xs text-muted-foreground">
               {vcfImportCount} contact{vcfImportCount === 1 ? "" : "s"} imported
             </p>
           ) : null}
 
-          {vcfConnected ? (
+          <ImportStatus message={vcfStatus} loading={vcfSyncing} />
+
+          <div className="flex flex-wrap items-center gap-3">
             <Button
-              variant="outline"
-              onClick={() => void handleVcfDisconnect()}
-              disabled={vcfDisconnecting}
-              className="h-10 text-destructive hover:text-destructive"
+              onClick={() => setWizardType("vcf")}
+              disabled={vcfSyncing}
+              className="h-10"
             >
-              {vcfDisconnecting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Disconnecting...
-                </>
-              ) : (
-                <>
-                  <Unplug className="size-4" />
-                  Disconnect
-                </>
-              )}
+              {vcfConnected ? "Import again" : "Import contacts"}
             </Button>
-          ) : null}
+
+            {vcfConnected ? (
+              <Button
+                variant="outline"
+                onClick={() => void handleVcfDisconnect()}
+                disabled={vcfDisconnecting}
+                className="h-10 text-destructive hover:text-destructive"
+              >
+                {vcfDisconnecting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Disconnecting...
+                  </>
+                ) : (
+                  <>
+                    <Unplug className="size-4" />
+                    Disconnect
+                  </>
+                )}
+              </Button>
+            ) : null}
+          </div>
         </div>
       </IntegrationCard>
+
+      <ConnectWizard
+        open={wizardType !== null}
+        onOpenChange={(open) => { if (!open) setWizardType(null); }}
+        type={wizardType ?? "hubspot"}
+        onHubSpotConnect={(apiToken) => wizardConnectHubSpot(apiToken)}
+        onGoogleConnect={() => wizardConnectGoogle()}
+        onLinkedInImport={(file) => wizardImportLinkedIn(file)}
+        onVcfImport={(file) => wizardImportVcf(file)}
+      />
     </div>
   );
 }
