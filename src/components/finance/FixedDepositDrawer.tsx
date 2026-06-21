@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,7 +24,30 @@ export type FixedDepositFormValues = Omit<
 interface FixedDepositDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode: "add" | "edit";
+  fd?: FixedDeposit | null;
   onSubmit: (data: FixedDepositFormValues) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
+}
+
+function fdToFormValues(fd: FixedDeposit): FixedDepositFormValues {
+  const isKnownBank = SL_BANKS.includes(fd.bankName);
+
+  return {
+    bankName: isKnownBank ? fd.bankName : "Other",
+    accountNumber: fd.accountNumber,
+    branch: fd.branch ?? "",
+    currency: fd.currency,
+    principalAmount: fd.principalAmount,
+    currentBalance: fd.currentBalance,
+    interestRate: fd.interestRate,
+    openedDate: fd.openedDate,
+    maturityDate: fd.maturityDate,
+    nextInterestPayment: fd.nextInterestPayment ?? "",
+    nextInterestAmount: fd.nextInterestAmount,
+    interestDispositionAccount: fd.interestDispositionAccount ?? "",
+    notes: fd.notes ?? "",
+  };
 }
 
 const emptyForm: FixedDepositFormValues = {
@@ -45,11 +69,15 @@ const emptyForm: FixedDepositFormValues = {
 export default function FixedDepositDrawer({
   open,
   onOpenChange,
+  mode,
+  fd,
   onSubmit,
+  onDelete,
 }: FixedDepositDrawerProps) {
   const [values, setValues] = useState<FixedDepositFormValues>(emptyForm);
   const [customBank, setCustomBank] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isOtherBank = values.bankName === "Other";
@@ -57,10 +85,16 @@ export default function FixedDepositDrawer({
   useEffect(() => {
     if (!open) return;
 
-    setValues(emptyForm);
-    setCustomBank("");
+    if (mode === "edit" && fd) {
+      setValues(fdToFormValues(fd));
+      setCustomBank(SL_BANKS.includes(fd.bankName) ? "" : fd.bankName);
+    } else {
+      setValues(emptyForm);
+      setCustomBank("");
+    }
+
     setError(null);
-  }, [open]);
+  }, [open, mode, fd]);
 
   function updateField<K extends keyof FixedDepositFormValues>(
     key: K,
@@ -135,11 +169,33 @@ export default function FixedDepositDrawer({
     }
   }
 
+  async function handleDelete() {
+    if (!fd?.id || !onDelete) return;
+
+    setDeleting(true);
+    setError(null);
+
+    try {
+      await onDelete(fd.id);
+      onOpenChange(false);
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Failed to delete fixed deposit.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle>Add fixed deposit</SheetTitle>
+          <SheetTitle>
+            {mode === "edit" ? "Fixed deposit" : "Add fixed deposit"}
+          </SheetTitle>
           <SheetDescription>
             Track locked savings with maturity dates and interest payments.
           </SheetDescription>
@@ -362,9 +418,31 @@ export default function FixedDepositDrawer({
           ) : null}
 
           <SheetFooter className="px-0">
-            <Button type="submit" disabled={saving} className="w-full">
-              {saving ? "Saving..." : "Create fixed deposit"}
-            </Button>
+            <div className="flex w-full flex-wrap items-center gap-2">
+              {mode === "edit" && fd?.id && onDelete ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={saving || deleting}
+                  onClick={() => void handleDelete()}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                  {deleting ? "Deleting..." : "Delete"}
+                </Button>
+              ) : null}
+              <Button
+                type="submit"
+                disabled={saving || deleting}
+                className="ml-auto min-w-[160px] flex-1 sm:flex-none"
+              >
+                {saving
+                  ? "Saving..."
+                  : mode === "edit"
+                    ? "Save changes"
+                    : "Create fixed deposit"}
+              </Button>
+            </div>
           </SheetFooter>
         </form>
       </SheetContent>

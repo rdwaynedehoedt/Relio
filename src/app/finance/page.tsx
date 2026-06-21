@@ -8,6 +8,7 @@ import {
   Lock,
   Plus,
   RefreshCw,
+  Trash2,
   TrendingDown,
   TrendingUp,
   Upload,
@@ -68,6 +69,7 @@ import {
   getTransactions,
   getWallets,
   logActivity,
+  updateFixedDeposit,
   updateWallet,
 } from "@/lib/firestore";
 import type {
@@ -97,6 +99,8 @@ export default function FinancePage() {
   const [loading, setLoading] = useState(true);
   const [walletDrawerOpen, setWalletDrawerOpen] = useState(false);
   const [fdDrawerOpen, setFdDrawerOpen] = useState(false);
+  const [fdDrawerMode, setFdDrawerMode] = useState<"add" | "edit">("add");
+  const [selectedFd, setSelectedFd] = useState<FixedDeposit | null>(null);
   const [transactionDrawerOpen, setTransactionDrawerOpen] = useState(false);
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>({
@@ -245,6 +249,40 @@ export default function FinancePage() {
   async function handleDeleteFixedDeposit(id: string) {
     await deleteFixedDeposit(id);
     setFixedDeposits((current) => current.filter((fd) => fd.id !== id));
+  }
+
+  function openAddFdDrawer() {
+    setFdDrawerMode("add");
+    setSelectedFd(null);
+    setFdDrawerOpen(true);
+  }
+
+  function openEditFdDrawer(fd: FixedDeposit) {
+    setFdDrawerMode("edit");
+    setSelectedFd(fd);
+    setFdDrawerOpen(true);
+  }
+
+  function handleFdDrawerOpenChange(open: boolean) {
+    setFdDrawerOpen(open);
+    if (!open) {
+      setFdDrawerMode("add");
+      setSelectedFd(null);
+    }
+  }
+
+  async function handleUpdateFixedDeposit(data: FixedDepositFormValues) {
+    if (!selectedFd?.id) return;
+
+    await updateFixedDeposit(selectedFd.id, data);
+
+    setFixedDeposits((current) =>
+      current
+        .map((fd) => (fd.id === selectedFd.id ? { ...fd, ...data } : fd))
+        .sort((a, b) =>
+          (a.maturityDate ?? "").localeCompare(b.maturityDate ?? ""),
+        ),
+    );
   }
 
   async function handleCreateTransaction(data: {
@@ -671,7 +709,7 @@ export default function FinancePage() {
                     Locked savings with maturity tracking
                   </p>
                 </div>
-                <Button size="sm" onClick={() => setFdDrawerOpen(true)}>
+                <Button size="sm" onClick={openAddFdDrawer}>
                   <Plus className="size-4" />
                   Add FD
                 </Button>
@@ -693,7 +731,7 @@ export default function FinancePage() {
                   <Button
                     className="mt-4"
                     size="sm"
-                    onClick={() => setFdDrawerOpen(true)}
+                    onClick={openAddFdDrawer}
                   >
                     <Plus className="size-4" />
                     Add FD
@@ -706,13 +744,14 @@ export default function FinancePage() {
                       key={fd.id}
                       fd={fd}
                       rates={rates}
+                      onOpen={() => openEditFdDrawer(fd)}
                       onDelete={handleDeleteFixedDeposit}
                     />
                   ))}
 
                   <button
                     type="button"
-                    onClick={() => setFdDrawerOpen(true)}
+                    onClick={openAddFdDrawer}
                     className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 text-muted-foreground transition-colors hover:border-border hover:bg-muted/20 hover:text-foreground"
                   >
                     <Plus className="size-5" />
@@ -874,8 +913,15 @@ export default function FinancePage() {
 
       <FixedDepositDrawer
         open={fdDrawerOpen}
-        onOpenChange={setFdDrawerOpen}
-        onSubmit={handleCreateFixedDeposit}
+        onOpenChange={handleFdDrawerOpenChange}
+        mode={fdDrawerMode}
+        fd={selectedFd}
+        onSubmit={
+          fdDrawerMode === "add"
+            ? handleCreateFixedDeposit
+            : handleUpdateFixedDeposit
+        }
+        onDelete={handleDeleteFixedDeposit}
       />
 
       <TransactionDrawer
@@ -905,10 +951,12 @@ export default function FinancePage() {
 function FixedDepositCard({
   fd,
   rates,
+  onOpen,
   onDelete,
 }: {
   fd: FixedDeposit;
   rates: ExchangeRates;
+  onOpen: () => void;
   onDelete: (id: string) => void;
 }) {
   const progress = getFdProgress(fd.openedDate, fd.maturityDate);
@@ -924,7 +972,18 @@ function FixedDepositCard({
   );
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      className="cursor-pointer rounded-2xl border border-border/60 bg-card p-5 shadow-sm transition-colors hover:border-border hover:bg-muted/10"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -942,9 +1001,26 @@ function FixedDepositCard({
             </p>
           ) : null}
         </div>
-        <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
-          {fd.interestRate.toFixed(2)}% p.a.
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+            {fd.interestRate.toFixed(2)}% p.a.
+          </span>
+          {fd.id ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 text-muted-foreground hover:text-destructive"
+              aria-label="Delete fixed deposit"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(fd.id!);
+              }}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <p className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
@@ -997,19 +1073,6 @@ function FixedDepositCard({
               ? ` · ${formatCurrencyAmount(fd.nextInterestAmount, fd.currency)}`
               : ""}
           </p>
-        </div>
-      ) : null}
-
-      {fd.id ? (
-        <div className="mt-4 flex justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs text-muted-foreground hover:text-destructive"
-            onClick={() => onDelete(fd.id!)}
-          >
-            Delete
-          </Button>
         </div>
       ) : null}
     </div>
