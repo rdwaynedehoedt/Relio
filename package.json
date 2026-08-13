@@ -10,7 +10,9 @@
     "generate-icons": "node scripts/generate-icons.js",
     "copy-user-data": "node scripts/copy-user-data.mjs",
     "seed-demo-data": "node scripts/seed-demo-data.mjs",
-    "encode-firebase-admin-env": "node scripts/encode-firebase-admin-env.mjs"
+    "encode-firebase-admin-env": "node scripts/encode-firebase-admin-env.mjs",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -51,6 +53,20 @@
     "eslint-config-next": "16.2.9",
     "firebase-admin": "^13.4.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+    "typescript": "^5",
+    "storybook": "^10.5.8",
+    "@storybook/nextjs-vite": "^10.5.8",
+    "@chromatic-com/storybook": "latest",
+    "@storybook/addon-vitest": "^10.5.8",
+    "@storybook/addon-a11y": "^10.5.8",
+    "@storybook/addon-docs": "^10.5.8",
+    "@storybook/addon-mcp": "latest",
+    "vite": "latest",
+    "eslint-plugin-storybook": "^10.5.8",
+    "vitest": "latest",
+    "playwright": "latest",
+    "@vitest/browser-playwright": "latest",
+    "@vitest/coverage-v8": "latest"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
