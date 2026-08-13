@@ -20,6 +20,45 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Storybook
+
+Run the component explorer:
+
+```bash
+npm run storybook
+```
+
+It opens on [http://localhost:6006](http://localhost:6006). `npm run build-storybook` produces a static build in `storybook-static/`.
+
+`.storybook/preview.tsx` imports `src/app/globals.css` and applies the same `next/font` variable as `src/app/layout.tsx`, so components render with the real Tailwind theme. Use the **Theme** toolbar toggle to switch between the light and dark tokens.
+
+### Adding a story
+
+Create a `*.stories.tsx` file next to the component — anything under `src/` is picked up automatically:
+
+```tsx
+// src/components/ui/separator.stories.tsx
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+
+import { Separator } from './separator'
+
+const meta = {
+  component: Separator,
+  parameters: { layout: 'centered' },
+  args: { orientation: 'horizontal' },
+  argTypes: {
+    orientation: { control: 'inline-radio', options: ['horizontal', 'vertical'] },
+  },
+} satisfies Meta<typeof Separator>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {}
+export const Vertical: Story = { args: { orientation: 'vertical' } }
+```
+
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
