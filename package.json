@@ -10,7 +10,9 @@
     "generate-icons": "node scripts/generate-icons.js",
     "copy-user-data": "node scripts/copy-user-data.mjs",
     "seed-demo-data": "node scripts/seed-demo-data.mjs",
-    "encode-firebase-admin-env": "node scripts/encode-firebase-admin-env.mjs"
+    "encode-firebase-admin-env": "node scripts/encode-firebase-admin-env.mjs",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -42,6 +44,10 @@
     "vcf": "^2.1.2"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^10.5.8",
+    "@storybook/addon-docs": "^10.5.8",
+    "@storybook/addon-mcp": "latest",
+    "@storybook/nextjs-vite": "^10.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -49,8 +55,11 @@
     "canvas": "^3.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "eslint-plugin-storybook": "^10.5.8",
     "firebase-admin": "^13.4.0",
+    "storybook": "^10.5.8",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "latest"
   }
 }
