@@ -27,9 +27,9 @@ export default function SidebarInset({
           type="button"
           onClick={toggle}
           aria-label="Open navigation menu"
-          className="fixed top-4 left-4 z-50 flex size-9 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
+          className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-lg transition-colors hover:bg-muted"
         >
-          <Menu className="size-4" />
+          <Menu className="size-6" />
         </button>
       ) : null}
 

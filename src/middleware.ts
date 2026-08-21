@@ -9,7 +9,13 @@ export function middleware(request: NextRequest) {
 
   const isAuthenticated =
     request.cookies.get(AUTH_COOKIE)?.value === "1";
-  const destination = isAuthenticated ? "/dashboard" : "/home";
+    
+  const isMobile = /mobile|android|iphone|ipad|phone/i.test(
+    request.headers.get("user-agent") || ""
+  );
+
+  const authenticatedDestination = isMobile ? "/finance" : "/dashboard";
+  const destination = isAuthenticated ? authenticatedDestination : "/home";
 
   return NextResponse.redirect(new URL(destination, request.url));
 }
