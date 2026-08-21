@@ -31,7 +31,7 @@ interface FixedDepositDrawerProps {
 }
 
 function fdToFormValues(fd: FixedDeposit): FixedDepositFormValues {
-  const isKnownBank = SL_BANKS.includes(fd.bankName);
+  const isKnownBank = (SL_BANKS as readonly string[]).includes(fd.bankName);
 
   return {
     bankName: isKnownBank ? fd.bankName : "Other",
@@ -87,7 +87,7 @@ export default function FixedDepositDrawer({
 
     if (mode === "edit" && fd) {
       setValues(fdToFormValues(fd));
-      setCustomBank(SL_BANKS.includes(fd.bankName) ? "" : fd.bankName);
+      setCustomBank((SL_BANKS as readonly string[]).includes(fd.bankName) ? "" : fd.bankName);
     } else {
       setValues(emptyForm);
       setCustomBank("");

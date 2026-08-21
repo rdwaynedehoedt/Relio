@@ -1001,26 +1001,9 @@ function FixedDepositCard({
             </p>
           ) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
-            {fd.interestRate.toFixed(2)}% p.a.
-          </span>
-          {fd.id ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 text-muted-foreground hover:text-destructive"
-              aria-label="Delete fixed deposit"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete(fd.id!);
-              }}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          ) : null}
-        </div>
+        <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+          {fd.interestRate.toFixed(2)}% p.a.
+        </span>
       </div>
 
       <p className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
@@ -1075,6 +1058,22 @@ function FixedDepositCard({
           </p>
         </div>
       ) : null}
+
+      <div
+        className="mt-4 flex justify-end border-t border-border/50 pt-4"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => fd.id && onDelete(fd.id)}
+        >
+          <Trash2 className="size-3.5" />
+          Delete
+        </Button>
+      </div>
     </div>
   );
 }

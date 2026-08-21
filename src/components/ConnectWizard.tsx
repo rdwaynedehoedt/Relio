@@ -314,7 +314,7 @@ export default function ConnectWizard({
           <TestRow label="Calendar" result={calendar} />
           {allPassed ? (
             <p className="text-sm text-emerald-600 dark:text-emerald-400">
-              All good — closing...
+              All good closing...
             </p>
           ) : tested ? (
             <Button

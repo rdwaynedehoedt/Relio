@@ -763,7 +763,7 @@ export async function getFixedDeposits(userId: string): Promise<FixedDeposit[]> 
   );
 
   return snapshot.docs
-    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as FixedDeposit)
+    .map((docSnap) => ({ ...docSnap.data(), id: docSnap.id }) as FixedDeposit)
     .sort((a, b) => (a.maturityDate ?? "").localeCompare(b.maturityDate ?? ""));
 }
 
